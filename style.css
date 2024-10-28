@@ -3,18 +3,29 @@ body {
   overflow: hidden;
 }
 
-button#expandButton {
-  color: beige;
-  border: 1px white solid;
-  border-radius: 5px;
-  background-color: #4CAF50;
+#buttonContainer {
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
+  width: calc(18 * 34px);
+  height: 34px;
+  top: 0;
+  left: 0;
 }
 
+button#expandButton,
 button#collapseButton {
   color: beige;
   border: 1px white solid;
   border-radius: 5px;
-  width: 20px;
+  background-color: #4CAF50;
+  width: 34px;
+  height: 34px;
+  font-size: 24px;
+  line-height: 34px;
+  text-align: center;
+}
+
+button#collapseButton {
   background-color: #f44336;
-  /* Rouge */
 }

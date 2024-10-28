@@ -12,6 +12,9 @@ class Matrix {
         // Initialiser le tableau 2D pour stocker les valeurs des cellules
         this.cellValues = Array.from({ length: rows }, () => Array(cols).fill(''));
 
+        // Initialiser le niveau d'expansion
+        this.expansionLevel = 1;
+
         this.init();
     }
 
@@ -19,6 +22,7 @@ class Matrix {
         this.canvas.addEventListener('mousemove', (event) => this.handleMouseMove(event));
         this.canvas.addEventListener('dblclick', (event) => this.handleDoubleClick(event));
         this.drawGrid();
+        this.addExpandCollapseButtons();
     }
 
     handleMouseMove(event) {
@@ -27,8 +31,13 @@ class Matrix {
         const y = event.clientY - rect.top;
         const col = Math.floor((x - this.offset) / this.cellSize);
         const row = Math.floor((y - this.offset) / this.cellSize);
-        this.drawGrid(row, col);
-        this.positionExpandCollapseButtons(row, col);
+
+        // Vérifier que les coordonnées de la cellule survolée sont dans les limites de la grille
+        if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
+            this.drawGrid(row, col);
+        } else {
+            this.drawGrid();
+        }
     }
 
     handleDoubleClick(event) {
@@ -80,29 +89,29 @@ class Matrix {
     
         // Dessiner les cellules surlignées
         for (let i = 0; i <= this.rows; i++) {
-            for (let j = 0; j <= this.cols; j++) {
+            for (let j = 0; j < this.cols; j++) {
                 if (i === highlightRow || j === highlightCol) {
                     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.20)';
                     this.ctx.fillRect(this.offset + j * this.cellSize, this.offset + i * this.cellSize, this.cellSize, this.cellSize);
                 }
             }
         }
-
-        // Dessiner les lignes de la grille et les valeurs des cellules
-for (let i = 0; i < this.rows; i++) {
-    for (let j = 0; j < this.cols; j++) {
-        this.ctx.strokeStyle = "#ffffff22";
-        this.ctx.strokeRect(this.offset + j * this.cellSize, this.offset + i * this.cellSize, this.cellSize, this.cellSize);
-
-        // Dessiner les valeurs des cellules
-        if (this.cellValues[i][j] !== '') {
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = '14px Arial';
-            this.ctx.fillText(this.cellValues[i][j], this.offset + j * this.cellSize + 5, this.offset + i * this.cellSize + 15);
-        }
-    }
-}
     
+        // Dessiner les lignes de la grille et les valeurs des cellules
+        for (let i = 0; i <= this.rows; i++) {
+            for (let j = 0; j <= this.cols; j++) {
+                this.ctx.strokeStyle = "#ffffff22";
+                this.ctx.strokeRect(this.offset + j * this.cellSize, this.offset + i * this.cellSize, this.cellSize, this.cellSize);
+
+                // Dessiner les valeurs des cellules
+                if (this.cellValues[i] && this.cellValues[i][j] !== undefined && this.cellValues[i][j] !== '') {
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = '14px Arial';
+                    this.ctx.fillText(this.cellValues[i][j], this.offset + j * this.cellSize + 5, this.offset + i * this.cellSize + 16);
+                }
+            }
+        }
+
         // Dessiner les entêtes des colonnes et des lignes
         for (let i = 0; i <= this.rows; i++) {
             for (let j = 0; j <= this.cols; j++) {
@@ -161,54 +170,50 @@ for (let i = 0; i < this.rows; i++) {
                 // Restaurer le contexte à son état original
                 this.ctx.restore();
             }        
-        }                
+        }
     }
 
-    positionExpandCollapseButtons(row, col) {
-        // Supprimer les anciens boutons s'ils existent
-        const oldExpandButton = document.getElementById('expandButton');
-        const oldCollapseButton = document.getElementById('collapseButton');
-        if (oldExpandButton) oldExpandButton.remove();
-        if (oldCollapseButton) oldCollapseButton.remove();
+    addExpandCollapseButtons() {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.id = 'buttonContainer';
+        buttonContainer.style.position = 'absolute';
+        buttonContainer.style.left = `${this.offset - 34}px`;
+        buttonContainer.style.top = `${this.offset - this.cellSize}px`;
+        document.body.appendChild(buttonContainer);
 
-        // Créer et positionner les nouveaux boutons
         const expandButton = document.createElement('button');
         expandButton.id = 'expandButton';
         expandButton.innerHTML = '+';
-        expandButton.style.position = 'absolute';
-        expandButton.style.left = `${this.offset + col * this.cellSize + this.cellSize}px`;
-        expandButton.style.top = `${this.offset + row * this.cellSize + 35}px`;
-        document.body.appendChild(expandButton);
+        buttonContainer.appendChild(expandButton);
 
         const collapseButton = document.createElement('button');
         collapseButton.id = 'collapseButton';
         collapseButton.innerHTML = '-';
-        collapseButton.style.position = 'absolute';
-        collapseButton.style.left = `${this.offset + col * this.cellSize - this.cellSize + 14}px`;
-        collapseButton.style.top = `${this.offset + row * this.cellSize - 19}px`;
-        document.body.appendChild(collapseButton);
+        buttonContainer.appendChild(collapseButton);
 
         expandButton.addEventListener('click', () => this.expandGrid());
         collapseButton.addEventListener('click', () => this.collapseGrid());
     }
 
     expandGrid() {
-        this.cols += 16;
-        this.rows += 16;
+        this.expansionLevel++;
+        this.cols = 16 * this.expansionLevel;
+        this.rows = 16 * this.expansionLevel;
         this.cellValues = Array.from({ length: this.rows }, (_, i) => 
-            Array.from({ length: this.cols }, (_, j) => this.cellValues[i] && this.cellValues[i][j] ? this.cellValues[i][j] : '')
+            Array.from({ length: this.cols }, (_, j) => (this.cellValues[i] && this.cellValues[i][j] !== undefined) ? this.cellValues[i][j] : '')
         );
         this.drawGrid();
     }
 
     collapseGrid() {
-        if (this.cols > 16 && this.rows > 16) {
-            this.cols -= 16;
-            this.rows -= 16;
+        if (this.expansionLevel > 1) {
+            this.expansionLevel--;
+            this.cols = 16 * this.expansionLevel;
+            this.rows = 16 * this.expansionLevel;
             this.cellValues = this.cellValues.slice(0, this.rows).map(row => row.slice(0, this.cols));
             this.drawGrid();
         }
     }
 }
 
-const matrix = new Matrix('.myCanvas', 64, 64, 34, 70);
+const matrix = new Matrix('.myCanvas', 16, 16, 34, 70);
