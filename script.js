@@ -177,8 +177,7 @@ class Matrix {
         const buttonContainer = document.createElement('div');
         buttonContainer.id = 'buttonContainer';
         buttonContainer.style.position = 'absolute';
-        buttonContainer.style.left = `${this.offset - 34}px`;
-        buttonContainer.style.top = `${this.offset - this.cellSize}px`;
+        
         document.body.appendChild(buttonContainer);
 
         const expandButton = document.createElement('button');
@@ -202,6 +201,7 @@ class Matrix {
         this.cellValues = Array.from({ length: this.rows }, (_, i) => 
             Array.from({ length: this.cols }, (_, j) => (this.cellValues[i] && this.cellValues[i][j] !== undefined) ? this.cellValues[i][j] : '')
         );
+        
         this.drawGrid();
     }
 

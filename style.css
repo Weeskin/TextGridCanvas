@@ -1,14 +1,17 @@
 body {
   margin: 0;
   overflow: hidden;
+  --cell-size: 34px;
 }
+
+
 
 #buttonContainer {
   position: absolute;
   display: flex;
   justify-content: space-between;
-  width: calc(18 * 34px);
-  height: 34px;
+  width: calc(2 * --cell-size);
+  height: calc(1 * --cell-size);
   top: 0;
   left: 0;
 }
@@ -27,5 +30,6 @@ button#collapseButton {
 }
 
 button#collapseButton {
+  margin-top: 34px;
   background-color: #f44336;
 }
