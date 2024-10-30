@@ -4,6 +4,13 @@ body {
   background-color: #292929;
 }
 
+.menubar {
+  background-color: black;
+  height: 81px;
+  width: 100%;
+  border-bottom: 1px solid darkblue;
+}
+
 .grid-container {
   display: grid;
   grid-template-columns: repeat(17, 34px);
@@ -26,29 +33,41 @@ body {
   position: relative;
 }
 
-.grid-cell.highlight {
+.matrixMixer {
+  display: grid;
+  gap: 0;
+  margin: 5px 10px;
+  position: relative;
+}
+
+.grid-cell {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  position: relative;
+}
+
+.highlight {
   background-color: rgba(255, 255, 255, 0.20);
 }
 
 .header {
   background-color: #444;
+  border: 1px solid rgba(255, 255, 255, 0.13);
   color: white;
   font-weight: bold;
   text-align: center;
-}
-
-.button-container {
-  position: absolute;
-  top: 10px;
-  left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button {
   padding: 5px 10px;
   margin: 5px;
   cursor: pointer;
-  background-color: #444;
-  color: white;
   border: none;
   border-radius: 3px;
 }
