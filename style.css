@@ -2,6 +2,7 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   background-color: #292929;
+  color: white;
 }
 
 .menubar {
@@ -11,63 +12,104 @@ body {
   border-bottom: 1px solid darkblue;
 }
 
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(17, 34px);
-  /* Ajusté pour les en-têtes */
-  grid-template-rows: repeat(17, 34px);
-  /* Ajusté pour les en-têtes */
-  gap: 0;
-  margin: 70px;
-  position: relative;
+.container {
+  padding: 20px;
 }
 
-.grid-cell {
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+button {
+  padding: 5px 10px;
+  background-color: #555;
   color: white;
-  position: relative;
+  border: none;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+button:hover {
+  background-color: #777;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #292929;
 }
 
 .matrixMixer {
-  display: grid;
-  gap: 0;
-  margin: 5px 10px;
   position: relative;
+  overflow:hidden;
 }
 
-.grid-cell {
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/******* Container des boutons *******/
+
+.btnContainer {
+  margin-bottom: 10px;
+}
+
+.btnContainer button {
+  width :100px;
+  text-align: center;
+  height: 48px;
+  padding: 5px 10px;
+  background-color: #555;
   color: white;
-  position: relative;
+  border: none;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btnContainer button:hover{
+  background-color: #777;
+}
+
+/******* Tableau Matrix *******/
+.matrixTable {
+  border-collapse: collapse;
+  overflow: hidden;
+}
+
+.matrixTable th, .matrixTable td {
+  border: 1px solid #555;
+}
+
+.matrixTable th {
+  background-color: #444;
+}
+
+.matrixTable td {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  cursor: cell;
+}
+
+.borderBottom{
+  border-bottom: 2px solid rgba(255, 255, 255, 0.13);
+}
+
+.borderRight{
+  border-right: 2px solid rgba(255, 255, 255, 0.13);
+}
+
+.hovered {
+  border: 1px solid darkgray;
+;
+}
+.matrixTable td.active {
+  background-color: #3a3;
+}
+
+.matrixTable td.disabled {
+  background-color: #555;
+}
+
+.grid-cell{
+  background-color: #222;
+  color: white;
 }
 
 .highlight {
   background-color: rgba(255, 255, 255, 0.20);
 }
 
-.header {
-  background-color: #444;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  color: white;
-  font-weight: bold;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-button {
-  padding: 5px 10px;
-  margin: 5px;
-  cursor: pointer;
-  border: none;
-  border-radius: 3px;
+.hidden {
+  display: none;
 }
