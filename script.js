@@ -1,4 +1,4 @@
-class tableMatrix {
+class gridMatrix {
     color;
     constructor(p_containerSelector, p_numColumns, p_numRows, p_cellSize) {
         this.m_matrixMixer = document.querySelector(p_containerSelector);
@@ -8,242 +8,394 @@ class tableMatrix {
         this.m_isDragging = false;
         this.m_isSpacePressed = false;
         this.m_cols = p_numColumns;
-        this.m_masterColumnsHeaders = [			{ name: "AES67", m_colIntervals: ['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] },
+        this.m_masterColumnsHeaders = [
+            { name: "AES67", m_colIntervals: ['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] },
             // {name: "FLX2" , m_colIntervals :['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] },
             // {name: "MADI" , m_colIntervals :['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] }
         ]
         this.m_columnHeaders = [];
         this.m_rows = p_numRows;
-        this.m_inputsGroups = [
+        this.m_masterRowHeaders = [
             { name: "DANTE", m_rowIntervals: ['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] },
             // { name: "MADI", m_rowIntervals: ['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] },
             // { name: "FLX1", m_rowIntervals: ['1-8', '9-16', '17-24', '25-32', '33-40', '41-48', '49-56', '57-64'] }
         ];
         this.m_rowHeaders = [];
         this.m_cellValues = "";
-        this.m_expansionLevel = 1;
+        this.m_expansionLevel = 3;
+
+        this.isHideColVisible = false
+        this.isHideRowVisible = false
+
         this.init();
     }
 
     init() {
-        this.createTable();
+        this.createGrid();
         this.addEventListeners();
     }
 
-    createTable() {
+    createGrid(p_expansion_lvl) {
         try {
             this.m_matrixMixer.innerHTML = "";
             this.m_matrixMixer.style.padding = "15px";
 
+            // Buttons Container
+            this.addExpandCollapseButtons();
+
+            // Grid Container
             this.l_MatrixContainer = document.createElement("div");
             this.l_MatrixContainer.classList.add("matrixContainer");
-
-            this.table = document.createElement("table");
-            this.table.classList.add("matrixTable");
-            this.table.style.borderRadius = "5px"
-
-            this.l_MatrixContainer.appendChild(this.table);
-
-            this.addExpandCollapseButtons();
-            this.createColumnHeaders();
-            this.createRow();
+            this.l_MatrixContainer.style.width = "fit-content";
+            this.l_MatrixContainer.style.height = "fit-content";
+            this.l_MatrixContainer.style.display = "grid";
+            this.l_MatrixContainer.style.gridTemplateColumns = "auto auto";
+            this.l_MatrixContainer.style.gridTemplateRows = "auto auto";
 
             this.m_matrixMixer.appendChild(this.l_MatrixContainer);
+
+            // Empty Container
+            this.createEmptyContainer();
+
+            // Column Headers
+            this.createColumnHeaders(p_expansion_lvl);
+
+            // Row Headers
+            this.createRowHeaders(p_expansion_lvl);
+
+            // Grid Cells
+            this.createGridCell(p_expansion_lvl);
+
         } catch (error) {
-            console.error(`Erreur lors de l'exécution de createTable : ${error}`);
+            console.error(`Erreur lors de l'exécution de createGrid : ${error}`);
         }
     }
 
-    createColumnHeaders() {
-        const l_colHeaders1 = document.createElement("tr");
-        const l_colHeaders2 = document.createElement("tr");
-        const l_colHeaders3 = document.createElement("tr");
-
-        const titleCell = document.createElement("th");
-        titleCell.innerText = 'New Grid';
-        titleCell.rowSpan = 3;
-        titleCell.colSpan = 3;
-        titleCell.style.borderRadius = "5px";
-        titleCell.classList.add("header", "titleCell")
-        titleCell.style.width = `${this.m_cellSize}px`;
-        titleCell.style.height = `${this.m_cellSize}px`;
-        l_colHeaders1.appendChild(titleCell);
-
-        this.m_masterColumnsHeaders.forEach((group) => {
-            //First line
-            const masterHeaderColumn = document.createElement('th');
-            masterHeaderColumn.innerText = group.name;
-            masterHeaderColumn.colSpan = this.m_cols;
-            masterHeaderColumn.classList.add("header", "colHeader1");
-            masterHeaderColumn.style.borderTop = " 4px solid darkgreen ";
-            masterHeaderColumn.style.width = `${this.m_cellSize * this.m_cols}px`;
-            masterHeaderColumn.style.height = `${this.m_cellSize * 5}px`;
-            masterHeaderColumn.style.textAlign = 'left';
-            masterHeaderColumn.style.verticalAlign = 'top';
-            l_colHeaders1.appendChild(masterHeaderColumn);
-
-            //Second line
-            group.m_colIntervals.forEach((interval, intervalIndex) => {
-                const th = document.createElement("th");
-                const div = document.createElement("div");
-                div.textContent = `${interval}`;
-                div.style.transform = "rotate(-90deg)";
-                div.style.position = "absolute"
-                div.style.top = "12px";
-                div.style.left = "0";
-
-                th.colSpan = 8;
-                th.style.height = `${this.m_cellSize * 3}px`;
-                th.style.position = "relative"
-                th.style.textAlign = "right";
-                th.style.verticalAlign = "top"
-                th.style.overflow = "hidden";
-                th.classList.add("header", "colHeader2")
-                th.appendChild(div);
-                l_colHeaders2.appendChild(th);
-
-                th.setAttribute('data-interval-index', `${intervalIndex}`);
-
-                this.addMinusPlusBtn(th)
-            });
-
-            //Third Line
-            for (let colIndex = 1; colIndex <= this.m_cols; colIndex++) {
-
-                if (colIndex % 8 === 0) {
-                    const th = document.createElement("th");
-                    const div = document.createElement("div");
-                    const intervalIndex = Math.floor((colIndex - 1) / 8);
-                    div.textContent = `${colIndex/8}`;
-                    div.style.transform = "rotate(-90deg)";
-                    div.style.whiteSpace = "nowrap";
-                    div.style.display = "inline-block";
-                    th.classList.add('hideColHeader3');
-                    th.colSpan = 2;
-                    th.style.width = `${this.m_cellSize}px`;
-                    th.style.height = `${this.m_cellSize}px`;
-                    th.style.display ="none";
-                    th.classList.add("header", "colHeader3");
-                    th.setAttribute('data-interval-index', `${intervalIndex}`);
-                    th.appendChild(div);
-                    l_colHeaders3.appendChild(th);
-                }
-
-                const th = document.createElement("th");
-                const div = document.createElement("div");
-                const intervalIndex = Math.floor((colIndex - 1) / 8);
-                div.textContent = `${colIndex}`;
-                div.style.transform = "rotate(-90deg)";
-                div.style.whiteSpace = "nowrap";
-                div.style.display = "inline-block";
-
-                th.style.width = `${this.m_cellSize}px`;
-                th.style.height = `${this.m_cellSize}px`;
-                th.classList.add("header", "colHeader3");
-                th.setAttribute('data-interval-index', `${intervalIndex}`);
-                th.appendChild(div);
-                l_colHeaders3.appendChild(th);
-            }
-        });
-
-        const thead = document.createElement('thead');
-        thead.appendChild(l_colHeaders1);
-        thead.appendChild(l_colHeaders2);
-        thead.appendChild(l_colHeaders3);
-        this.table.appendChild(thead);
+    createEmptyContainer() {
+        try {
+            this.l_emptyContainer = document.createElement("div");
+            this.l_emptyContainer.classList.add("gridContainer1", "emptyContainer", "header");
+            this.l_emptyContainer.innerText = "New Grid";
+            this.l_emptyContainer.style.borderTop = "1px solid #ffffff21";
+            this.l_emptyContainer.style.borderLeft = "2px solid #ffffff21";
+            this.l_emptyContainer.style.borderBottom = "2px solid #ffffff21";
+            this.l_emptyContainer.style.borderLeft = "1px solid #ffffff21";
+            this.l_emptyContainer.style.borderTopLeftRadius = "5px";
+            this.l_emptyContainer.style.display = "flex";
+            this.l_emptyContainer.style.justifyContent = "center";
+            this.l_emptyContainer.style.alignItems = "center";
+            this.l_MatrixContainer.appendChild(this.l_emptyContainer);
+        } catch (error) {
+            console.error(`Erreur lors de l'exécution de createEmptyContainer : ${error}`);
+        }
     }
 
-    createRow() {
-        this.m_inputsGroups.forEach(group => {
-            group.m_rowIntervals.forEach((subgroup, subgroupIndex) => {
-                for (let rowIndex = 1; rowIndex <= 8; rowIndex++) {
-                    const tr = document.createElement("tr");
+    createColumnHeaders(p_expansion_lvl) {
+        try {
+            let cols = this.m_cols;
+            if (p_expansion_lvl === 2) {
+                cols = Math.ceil(this.m_cols / 8);
+            } else if (p_expansion_lvl === 1) {
+                cols = Math.ceil(this.m_cols / 64);
+            }
 
-                    // First (Première cellule du groupe)
-                    if (subgroupIndex === 0 && rowIndex === 1) {
-                        const thGroup = document.createElement("th");
-                        thGroup.innerText = group.name;
-                        thGroup.rowSpan = this.m_rows;
-                        thGroup.classList.add("header", "rowHeader1");
-                        thGroup.style.borderLeft = "4px solid darkgreen";
-                        thGroup.style.width = `${this.m_cellSize * 5}px`;
-                        tr.appendChild(thGroup);
+            this.l_columnHeadersContainer = document.createElement("div");
+            this.l_columnHeadersContainer.classList.add("gridContainer2", "columnHeaders");
+            this.l_columnHeadersContainer.style.display = "grid";
+            this.l_columnHeadersContainer.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+
+            this.m_masterColumnsHeaders.forEach((header) => {
+                // colHeaders1
+                this.l_colHeader1 = document.createElement('div');
+                this.l_colHeader1.innerText = header.name;
+                this.l_colHeader1.classList.add("header", "colHeader1");
+                this.l_colHeader1.style.borderTop = "4px solid darkgreen";
+                this.l_colHeader1.style.borderLeft = "2px solid #ffffff21";
+                this.l_colHeader1.style.gridColumn = `span ${cols}`;
+                this.l_colHeader1.style.height = `${this.m_cellSize * 5}px`;
+                this.l_colHeader1.style.textAlign = 'left';
+                this.l_colHeader1.style.verticalAlign = 'top';
+                this.l_colHeader1.style.padding = "5px 0px 0px 5px";
+                this.l_columnHeadersContainer.appendChild(this.l_colHeader1);
+
+                header.m_colIntervals.forEach((colInterval, colIntervalIndex) => {
+                    // colHeaders2
+                    const l_colHeader2Content = document.createElement("div");
+                    l_colHeader2Content.textContent = `${colInterval}`;
+                    l_colHeader2Content.style.transform = "rotate(-90deg)";
+                    l_colHeader2Content.style.position = "absolute";
+                    l_colHeader2Content.style.top = "12px";
+                    l_colHeader2Content.style.left = "0";
+
+                    this.l_colHeader2 = document.createElement("div");
+                    this.l_colHeader2.classList.add("header", "colHeader2");
+                    this.l_colHeader2.style.gridColumn = `span ${cols / 8}`;
+                    this.l_colHeader2.style.height = `${this.m_cellSize * 3}px`;
+                    this.l_colHeader2.style.borderRight = "2px solid #ffffff21";
+                    this.l_colHeader2.style.position = "relative";
+                    this.l_colHeader2.style.textAlign = "right";
+                    this.l_colHeader2.style.verticalAlign = "top";
+                    this.l_colHeader2.style.padding = "5px";
+                    this.l_colHeader2.setAttribute('data-col-interval-index', `${colIntervalIndex}`);
+                    this.l_colHeader2.appendChild(l_colHeader2Content);
+                    this.l_columnHeadersContainer.appendChild(this.l_colHeader2);
+
+                    this.addMinusPlusBtn(this.l_colHeader2);
+                });
+
+                // colHeaders3
+                for (let colIndex = 1; colIndex <= this.m_cols; colIndex++) {
+                    const colIntervalIndex = Math.floor((colIndex - 1) / 8);
+
+                    const l_colHeader3Content = document.createElement("div")
+                    l_colHeader3Content.textContent = `${colIndex}`;
+                    l_colHeader3Content.style.transform = "rotate(-90deg)";
+                    l_colHeader3Content.style.position = "absolute";
+                    l_colHeader3Content.style.textAlign = "center";
+                    l_colHeader3Content.style.padding = "2px 2px"
+
+                    this.l_colHeader3 = document.createElement("div");
+                    this.l_colHeader3.classList.add("header", "colHeader3");
+                    this.l_colHeader3.style.height = `${this.m_cellSize}px`;
+                    this.l_colHeader3.style.width = `${this.m_cellSize}px`;
+                    this.l_colHeader3.style.position = "relative";
+                    this.l_colHeader3.setAttribute('data-interval-index', `${colIntervalIndex}`);
+                    this.l_colHeader3.appendChild(l_colHeader3Content)
+                    this.l_columnHeadersContainer.appendChild(this.l_colHeader3);
+
+                    //hideColHeader3
+                    if (colIndex % 8 === 0) {
+                        this.l_colHeader3.style.borderRight = "2px solid #ffffff21";
+                        const l_hideColHeader3Content = document.createElement("div");
+                        l_hideColHeader3Content.textContent = `${colIndex/ 8}`;
+                        l_hideColHeader3Content.style.transform = "rotate(-90deg)";
+                        l_hideColHeader3Content.style.position = "absolute";
+                        l_hideColHeader3Content.style.top = "14%";
+                        l_hideColHeader3Content.style.left = "48%";
+
+                        this.l_hideColHeader3 = document.createElement("div");
+                        this.l_hideColHeader3.classList.add("header", "hideColHeader3","hidden");
+                        this.l_hideColHeader3.style.position = "relative";
+                        this.l_hideColHeader3.style.height = `${this.m_cellSize}px`;
+                        this.l_hideColHeader3.style.gridColumn = `span 1`;
+                        this.l_hideColHeader3.style.borderRight = "2px solid #ffffff21";
+                        this.l_hideColHeader3.setAttribute('data-interval-index', `${colIntervalIndex}`);
+                        this.l_hideColHeader3.appendChild(l_hideColHeader3Content)
+                        this.l_columnHeadersContainer.appendChild(this.l_hideColHeader3);
                     }
 
-                    if (rowIndex === 1) {
-                        const thSubGroup = document.createElement("th");
-                        thSubGroup.innerText = `${subgroup}`;
-                        thSubGroup.rowSpan = 8;
-                        thSubGroup.classList.add("header", "rowHeader2");
-                        thSubGroup.style.width = `${this.m_cellSize * 3}px`
-                        thSubGroup.setAttribute('data-row-interval-index', `${subgroupIndex}`);
-                        tr.appendChild(thSubGroup);
-                        this.addMinusPlusBtn(thSubGroup); // Ajout du bouton +/- pour réduire/déplier
+                    if (colIndex >= 1 && colIndex <= 9) {
+                        l_colHeader3Content.style.padding = "0px 6px"
                     }
 
-                    if ((rowIndex + (subgroupIndex * 8)) % 8 === 0) {
-                        const thNumber = document.createElement("th");
-                        thNumber.innerText = `${subgroupIndex + 1}`;
-                        thNumber.classList.add("hideRowHeader3");
-                        thNumber.style.width = `${this.m_cellSize}px`
-                        thNumber.rowSpan = 1
-                        thNumber.style.display = `none`;
-                        thNumber.setAttribute('data-row-interval-index', `${subgroupIndex}`);
-                        tr.appendChild(thNumber);
+                    if (p_expansion_lvl === 2) {
+                        this.l_colHeader3.classList.remove("flex");
+                        this.l_colHeader3.classList.add("hidden");
+                        this.l_hideColHeader3.classList.remove("hidden");
+                        this.l_hideColHeader3.classList.add("flex");
+                    } else if (p_expansion_lvl === 1) {
+                        this.l_colHeader2.style.display = "none";
+                        this.l_colHeader3.style.display = "none";
+                        this.l_hideColHeader3.classList.remove("flex");
+                        this.l_hideColHeader3.classList.add("hidden");
                     }
-
-                    // Third (Numéro de la ligne)
-                    const thNumber = document.createElement("th");
-                    thNumber.innerText = `${rowIndex + (subgroupIndex * 8)}`;
-                    thNumber.classList.add("header", "rowHeader3");
-                    thNumber.style.width = `${this.m_cellSize}px`;
-                    thNumber.style.height = `${this.m_cellSize}px`;
-                    thNumber.style.minHeight = `${this.m_cellSize}px`;
-                    thNumber.setAttribute('data-row-interval-index', `${subgroupIndex}`);
-                    tr.appendChild(thNumber);
-
-
-                    // Grid (Cellules du tableau)
-                    for (let colIndex = 0; colIndex < this.m_cols; colIndex++) {
-                        const intervalIndex = Math.floor((colIndex - 1) / 8);
-                        // Ajout des colonnes masquées (foldColumn)
-                        if (colIndex % 8 === 0) {
-                            const hideFoldColumn = document.createElement('td');
-                            hideFoldColumn.classList.add('hideFoldColumn');
-                            hideFoldColumn.style.display = 'none';
-                            hideFoldColumn.classList.add("grid-cell");
-                            hideFoldColumn.colSpan = 2;
-                            hideFoldColumn.style.minWidth = `${this.m_cellSize*2}px`;
-                            hideFoldColumn.setAttribute('data-interval-index', `${intervalIndex + 1}`);
-                            hideFoldColumn.addEventListener('click', this.handleMouseClick.bind(this));
-                            tr.appendChild(hideFoldColumn);
-                        }
-
-                        // Ajout des cellules normales
-                        const td = document.createElement('td');
-                        td.setAttribute('data-row', `${rowIndex + (subgroupIndex * 8)}`);
-                        td.setAttribute('data-col', `${colIndex + 1}`);
-                        td.classList.add("grid-cell", "unFoldColumn");
-                        td.style.maxWidth = `${this.m_cellSize}px`;
-                        td.style.minWidth = `${this.m_cellSize}px`;
-                        td.innerText = this.m_cellValues;
-                        td.addEventListener('click', this.handleMouseClick);
-                        tr.appendChild(td);
-
-                        // Ajout des bordures tous les 8 carreaux
-                        if ((rowIndex + (subgroupIndex * 8)) % 8 === 0) {
-                            td.style.borderBottom = "2px solid rgba(255, 255, 255, 0.13)";
-                        }
-                        if ((colIndex + 1) % 8 === 0) {
-                            td.style.borderRight = "2px solid rgba(255, 255, 255, 0.13)";
-                        }
-                    }
-
-                    // Ajout de la ligne (tr) au tableau
-                    this.table.appendChild(tr);
                 }
             });
-        });
+            this.l_MatrixContainer.appendChild(this.l_columnHeadersContainer);
+        } catch (error) {
+            console.error(`Erreur lors de l'exécution de createColumnHeaders : ${error}`);
+        }
+    }
+
+    createRowHeaders(p_expansion_lvl) {
+        try {
+            let rows = this.m_rows;
+            if (p_expansion_lvl === 2) {
+                rows = Math.ceil(this.m_rows / 8);
+            } else if (p_expansion_lvl === 1) {
+                rows = Math.ceil(this.m_rows / 64);
+            }
+
+            this.l_rowHeadersContainer = document.createElement("div");
+            this.l_rowHeadersContainer.classList.add("gridContainer3", "rowHeaders");
+            this.l_rowHeadersContainer.style.display = "grid";
+            this.l_rowHeadersContainer.style.gridTemplateColumns = "repeat(3, max-content)";
+            this.l_rowHeadersContainer.style.gridAutoFlow = "column";
+
+
+            this.m_masterRowHeaders.forEach(header => {
+                //rowHeader1
+                this.l_rowHeader1 = document.createElement("div");
+                this.l_rowHeader1.innerText = header.name;
+                this.l_rowHeader1.classList.add("header", "rowHeader1");
+                this.l_rowHeader1.style.borderLeft = "4px solid darkgreen";
+                this.l_rowHeader1.style.gridRow = `span ${rows}`;
+                this.l_rowHeader1.style.width = `${this.m_cellSize * 5}px`;
+                this.l_rowHeader1.style.padding = "5px 0px 0px 5px";
+                this.l_rowHeadersContainer.appendChild(this.l_rowHeader1);
+
+                // rowHeader2
+                header.m_rowIntervals.forEach((rowInterval, rowIntervalIndex) => {
+                    this.l_rowHeader2 = document.createElement("div");
+                    this.l_rowHeader2.classList.add("header", "rowHeader2");
+                    this.l_rowHeader2.innerText = `${rowInterval}`;
+                    this.l_rowHeader2.style.gridRow = `span ${rows / 8}`;
+                    this.l_rowHeader2.style.width = `${this.m_cellSize * 4}px`;
+                    this.l_rowHeader2.style.padding = "5px 0px 0px 5px";
+                    this.l_rowHeader2.setAttribute('data-row-interval-index', `${rowIntervalIndex}`);
+                    this.l_rowHeadersContainer.appendChild(this.l_rowHeader2);
+                    this.addMinusPlusBtn(this.l_rowHeader2);
+                });
+
+                // rowHeaders3
+                for (let rowIndex = 1; rowIndex <= this.m_rows; rowIndex++) {
+                    const rowIntervalIndex = Math.floor((rowIndex - 1) / 8);
+                    this.l_rowHeader3 = document.createElement("div");
+                    this.l_rowHeader3.innerText = `${rowIndex}`;
+                    this.l_rowHeader3.classList.add("header", "rowHeader3", "flex");
+                    this.l_rowHeader3.style.height = `${this.m_cellSize}px`;
+                    this.l_rowHeader3.style.width = `${this.m_cellSize}px`;
+                    this.l_rowHeader3.style.gridRow = `span ${rows / 64}`;
+                    this.l_rowHeader3.setAttribute('data-interval-index', `${rowIntervalIndex}`);
+                    this.l_rowHeadersContainer.appendChild(this.l_rowHeader3);
+
+                    //hideRowHeader3
+                    if (rowIndex % 8 === 0) {
+                        this.l_rowHeader3.style.borderBottom = "2px solid #ffffff21";
+                        this.l_hideRowHeader3 = document.createElement("div");
+                        this.l_hideRowHeader3.classList.add("header", "hideRowHeader3", "hidden");
+                        this.l_hideRowHeader3.textContent = `${rowIntervalIndex + 1}`;
+                        this.l_hideRowHeader3.style.gridRow = `span 1`;
+                        this.l_hideRowHeader3.style.minWidth = `19px`;
+                        this.l_hideRowHeader3.style.borderBottom = "2px solid #ffffff21";
+                        this.l_hideRowHeader3.setAttribute('data-interval-index', `${rowIntervalIndex}`);
+                        this.l_rowHeadersContainer.appendChild(this.l_hideRowHeader3);
+                    }
+
+                    if (p_expansion_lvl === 2) {
+                        this.l_rowHeader3.classList.remove("flex");
+                        this.l_rowHeader3.classList.add("hidden");
+                        this.l_hideRowHeader3.classList.remove("hidden");
+                        this.l_hideRowHeader3.classList.add("flex");
+                    } else if (p_expansion_lvl === 1) {
+                        this.l_rowHeader2.style.display = "none";
+                        this.l_rowHeader3.style.display = "none";
+                        this.l_hideRowHeader3.classList.add("hidden");
+                    }
+                }
+
+            });
+
+            this.l_MatrixContainer.appendChild(this.l_rowHeadersContainer);
+        } catch (error) {
+            console.error(`Erreur lors de l'exécution de createRowHeaders : ${error}`);
+        }
+    }
+
+    createGridCell(p_expansion_lvl) {
+        try {
+            let cols = this.m_cols;
+            let rows = this.m_rows;
+            let cellSize = this.m_cellSize;
+            if (p_expansion_lvl === 2) {
+                cols = Math.ceil(this.m_cols / 8);
+                rows = Math.ceil(this.m_rows / 8);
+                cellSize = Math.ceil(this.m_cellSize * 4);
+            } else if (p_expansion_lvl === 1) {
+                cols = Math.ceil(this.m_cols / 64);
+                rows = Math.ceil(this.m_rows / 64);
+                cellSize = Math.ceil(this.m_cellSize * 16);
+            }
+
+            this.l_gridCellContainer = document.createElement("div");
+            this.l_gridCellContainer.classList.add("gridContainer4");
+            this.l_gridCellContainer.style.display = "grid";
+            this.l_gridCellContainer.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+            this.l_gridCellContainer.style.gridTemplateRows = `repeat(${rows}, max-content)`;
+            this.l_gridCellContainer.style.backgroundColor = "#222";
+            this.l_gridCellContainer.style.color = "white";
+            this.l_gridCellContainer.style.textAlign = "center";
+
+            for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+                for (let colIndex = 0; colIndex < cols; colIndex++) {
+                    const colIntervalIndex = Math.floor( (colIndex) / 8);
+                    const rowIntervalIndex = Math.floor((rowIndex) / 8);
+
+                    this.cell = document.createElement("div");
+                    this.cell.classList.add("cell", "grid-cell");
+                    this.cell.style.width = `${cellSize}px`;
+                    this.cell.style.height = `${cellSize}px`;
+                    this.cell.style.cursor = "pointer";
+                    this.cell.style.border = "1px solid #ffffff21";
+                    this.cell.setAttribute('data-row', `${rowIndex + 1}`);
+                    this.cell.setAttribute('data-col', `${colIndex + 1}`);
+                    this.cell.setAttribute('data-col-interval-index', `${colIntervalIndex}`);
+                    this.cell.setAttribute('data-row-interval-index', `${rowIntervalIndex}`);
+
+                    this.cell.innerText = this.m_cellValues;
+                    this.cell.addEventListener('click', this.handleMouseClick.bind(this));
+                    this.l_gridCellContainer.appendChild(this.cell);
+
+                    // Ajout des bordures tous les 8 carreaux + ligne et row cachés
+                    if ((rowIndex + 1) % 8 === 0) {
+                        this.cell.style.borderBottom = "2px solid #ffffff21";
+
+                        this.l_hiddenCellRow = document.createElement("div");
+                        this.l_hiddenCellRow.classList.add("cell", "hiddenCellRow", "hidden");
+                        this.l_hiddenCellRow.style.width = `${cellSize}px`;
+                        this.l_hiddenCellRow.style.height = `167px`;
+                        this.l_hiddenCellRow.style.cursor = "pointer";
+                        this.l_hiddenCellRow.style.top = `${this.m_cellSize * (rowIndex + 1)}px`; // Décalage vertical
+                        this.l_hiddenCellRow.style.left = `${this.m_cellSize}px`;
+                        this.l_hiddenCellRow.style.border = "1px solid red";
+                        this.l_hiddenCellRow.setAttribute('data-row', `${rowIndex + 1}`);
+                        this.l_hiddenCellRow.setAttribute('data-col', `${colIndex + 1}`);
+                        this.l_hiddenCellRow.setAttribute('data-row-interval-index', `${rowIntervalIndex}`);
+                        this.l_gridCellContainer.appendChild(this.l_hiddenCellRow);
+
+                    }
+                    if ((colIndex + 1) % 8 === 0) {
+                        this.cell.style.borderRight = "2px solid #ffffff21";
+
+                        this.l_hiddenCellCol = document.createElement("div");
+                        this.l_hiddenCellCol.classList.add("cell", "hiddenCellCol", "hidden");
+                        this.l_hiddenCellCol.style.width = `166px`;
+                        this.l_hiddenCellCol.style.height = `${cellSize}px`;
+                        this.l_hiddenCellCol.style.gridColumn = "span 8";
+                        this.l_hiddenCellCol.style.cursor = "pointer";
+                        this.l_hiddenCellCol.style.top = `${this.m_cellSize}px`;
+                        this.l_hiddenCellCol.style.left = `${this.m_cellSize * (colIndex + 1)}px`; // Décalage horizontal
+                        this.l_hiddenCellCol.style.border = "1px solid blue";
+                        this.l_hiddenCellCol.setAttribute('data-row', `${rowIndex + 1}`);
+                        this.l_hiddenCellCol.setAttribute('data-col', `${colIndex + 1}`);
+                        this.l_hiddenCellCol.setAttribute('data-col-interval-index', `${colIntervalIndex}`);
+                        this.l_gridCellContainer.appendChild(this.l_hiddenCellCol);
+                    }
+
+                    // Ajout des cellules cachées
+                    if ((rowIndex + 1) % 8 === 0 && (colIndex + 1) % 8 === 0) {
+                        // Créer les cellules invisibles combinées (lignes + colonnes)
+                        this.l_hiddenCellCombined = document.createElement("div");
+                        this.l_hiddenCellCombined.classList.add("cell", "hiddenCellCombined", "hidden");
+                        this.l_hiddenCellCombined.style.width = `${cellSize * 8}px`;
+                        this.l_hiddenCellCombined.style.height = `${cellSize * 8}px`;
+                        this.l_hiddenCellCombined.style.cursor = "pointer";
+                        this.l_hiddenCellCombined.style.top = `${this.m_cellSize * (rowIndex + 1)}px`; // Décalage vertical
+                        this.l_hiddenCellCombined.style.left = `${this.m_cellSize * (colIndex + 1)}px`; // Décalage horizontal
+                        this.l_hiddenCellCombined.style.border = "1px solid green";
+                        this.l_hiddenCellCombined.setAttribute('data-row', `${rowIndex + 1}`);
+                        this.l_hiddenCellCombined.setAttribute('data-col', `${colIndex + 1}`);
+                        this.l_hiddenCellCombined.setAttribute('data-col-interval-index', `${colIntervalIndex}`);
+                        this.l_hiddenCellCombined.setAttribute('data-row-interval-index', `${rowIntervalIndex}`);
+                        this.l_gridCellContainer.appendChild(this.l_hiddenCellCombined);
+                    }
+                }
+            }
+
+            this.l_MatrixContainer.appendChild(this.l_gridCellContainer);
+        } catch (error) {
+            console.error(`Erreur lors de l'exécution de createGridCell : ${error}`);
+        }
     }
 
     updateHeaders(p_audioWay, p_channelIdx) {
@@ -254,7 +406,7 @@ class tableMatrix {
         } else {
             this.m_rowHeaders.push(channelAlias);
         }
-        this.createTable();
+        this.createGrid();
     }
 
     addEventListeners() {
@@ -269,13 +421,12 @@ class tableMatrix {
 
     handleMouseClick(p_event) {
         p_event.preventDefault();
-
     }
 
     handleDoubleClick(p_event) {
         const l_cell = p_event.target;
         if (
-            l_cell.classList.contains("grid-cell") &&
+            l_cell.classList.contains("cell") &&
             !l_cell.classList.contains("header")
         ) {
             const l_row = parseInt(l_cell.getAttribute('data-row'));
@@ -297,7 +448,7 @@ class tableMatrix {
 
     handleMouseMove(p_event) {
         const l_cell = p_event.target;
-        if (l_cell.classList.contains("grid-cell")) {
+        if (l_cell.classList.contains("cell")) {
             const l_row = parseInt(l_cell.getAttribute('data-row'));
             const l_col = parseInt(l_cell.getAttribute('data-col'));
             this.crossHair(l_row, l_col);
@@ -326,7 +477,7 @@ class tableMatrix {
 
     handleMouseLeave(p_event) {
         const l_cell = p_event.target;
-        if (l_cell.classList.contains("grid-cell")) {
+        if (l_cell.classList.contains("cell")) {
             const l_row = parseInt(l_cell.getAttribute('data-row'));
             const l_col = parseInt(l_cell.getAttribute('data-col'));
             this.showInputBox(l_row, l_col, l_cell);
@@ -354,7 +505,7 @@ class tableMatrix {
     crossHair(p_row, p_col) {
 
         this.clearCrossHair();
-        const l_gridCell = this.m_matrixMixer.querySelectorAll(".grid-cell");
+        const l_gridCell = this.m_matrixMixer.querySelectorAll(".cell");
 
         l_gridCell.forEach((p_cell) => {
             const cellRow = parseInt(p_cell.getAttribute('data-row'));
@@ -387,7 +538,7 @@ class tableMatrix {
     }
 
     clearCrossHair() {
-        const l_gridCell = this.m_matrixMixer.querySelectorAll(".grid-cell");
+        const l_gridCell = this.m_matrixMixer.querySelectorAll(".cell");
         const rowHeaders3 = this.m_matrixMixer.querySelectorAll(".rowHeader3");
         const colHeaders3 = this.m_matrixMixer.querySelectorAll(".colHeader3");
 
@@ -410,14 +561,14 @@ class tableMatrix {
         const l_input = document.createElement("input");
         l_input.type = "number";
         l_input.className = "input-box";
-        l_input.style.position = "absolute";
+        l_input.style.position = "relative";
         l_input.style.width = `${this.m_cellSize}px`;
         l_input.style.height = `${this.m_cellSize}px`;
-        l_input.style.fontSize = "12px";
+        l_input.style.fontSize = "11px";
+        l_input.style.left = `-5px`;
+        l_input.style.top = `-5px`;
         l_input.style.textAlign = "center";
-        l_input.style.justifyContent = "flex-start";
         l_input.style.alignItems = "center";
-
         p_cell.appendChild(l_input);
         l_input.focus();
 
@@ -543,7 +694,6 @@ class tableMatrix {
         const l_expandCollapseButtons = document.createElement("div");
         l_expandCollapseButtons.className = "btnContainer";
 
-
         this.addExpandBtn(l_expandCollapseButtons);
         this.addCollapseBtn(l_expandCollapseButtons);
         this.addOptimalBtn(l_expandCollapseButtons);
@@ -554,30 +704,40 @@ class tableMatrix {
     expandGrid() {
         if (this.m_expansionLevel < 3) {
             this.m_expansionLevel++;
-            this.createTable(this.m_expansionLevel);
+            this.createGrid(this.m_expansionLevel);
         } else {
-            console.log("Le niveau d'expansion maximum de 3 est atteint.");
+            console.log("Expansion_lvl max à ", this.m_expansionLevel);
         }
-        this.m_cellValues = Array.from({ length: this.m_rows }, (_, i) =>
-            Array.from({ length: this.m_cols }, (_, j) =>
-                this.m_cellValues[i] && this.m_cellValues[i][j] !== undefined
-                    ? this.m_cellValues[i][j]
-                    : ""
-            )
-        );
+
     }
 
     collapseGrid() {
         if (this.m_expansionLevel > 1) {
             this.m_expansionLevel--;
-            this.createTable(this.m_expansionLevel);
+            this.createGrid(this.m_expansionLevel);
+            if (this.m_expansionLevel === 1) {
+                this.hideHeaders();
+            }
+        } else {
+            console.log("Expansion_lvl min à ", this.m_expansionLevel);
         }
     }
 
+    hideHeaders() {
+        // Cache les en-têtes de colonnes
+        this.l_columnHeadersContainer.querySelectorAll('.colHeader2, .colHeader3, .hideColHeader3').forEach(header => {
+            header.classList.add('hidden'); // Utilisation de la classe 'hidden'
+        });
+
+        // Cache les en-têtes de lignes
+        this.l_rowHeadersContainer.querySelectorAll('.rowHeader2, .rowHeader3, .hideRowHeader3').forEach(header => {
+            header.classList.add('hidden');
+        });
+    }
+
     optimalGrid() {
-        if (this.m_expansionLevel > 1) {
-            this.m_expansionLevel--;
-            this.createTable(this.m_expansionLevel);
+        if (this.m_expansionLevel >= 1) {
+            this.createGrid(this.m_expansionLevel = 2);
         }
     }
 
@@ -593,138 +753,234 @@ class tableMatrix {
         l_addMinusPlusBtn.style.marginLeft = "5px";
 
         l_addMinusPlusBtn.addEventListener('click', () => {
-            let p_type = "";
-            if (p_frame.hasAttribute('data-interval-index')) {
-                p_type = "column";
-            } else if (p_frame.hasAttribute('data-row-interval-index')) {
-                p_type = "row";
-            } else {
+            const p_type =
+                p_frame.hasAttribute('data-col-interval-index')
+                    ? "column"
+                    : p_frame.hasAttribute('data-row-interval-index')
+                        ? "row"
+                        : "";
+
+            if (!p_type) {
                 console.error("Type non déterminé pour p_frame.");
                 return;
             }
 
-            if (l_addMinusPlusBtn.classList.contains('minus-btn')) {
-                this.transformBtn(l_addMinusPlusBtn, p_frame, true, p_type);
-            } else {
-                this.transformBtn(l_addMinusPlusBtn, p_frame, false, p_type);
-            }
+            const isMinus = l_addMinusPlusBtn.classList.contains('minus-btn');
+            this.transformBtn(l_addMinusPlusBtn, p_frame, isMinus, p_type);
         });
 
         p_frame.appendChild(l_addMinusPlusBtn);
     }
 
     transformBtn(p_btn, p_frame, isMinus, p_type) {
+        p_btn.textContent = isMinus ? "+" : "-";
+        p_btn.classList.toggle("minus-btn", !isMinus);
+        p_btn.classList.toggle("plus-btn", isMinus);
+
+        if (p_type === "column") {
+            this.toggleColumn(p_frame.dataset.colIntervalIndex, isMinus);
+        } else if (p_type === "row") {
+            this.toggleRow(p_frame.dataset.rowIntervalIndex, isMinus);
+        }
+    }
+
+    toggleColumn(index, isMinus) {
+        // Toggle la visibilité de la colonne
+        let colCells = this.l_gridCellContainer.querySelectorAll(`.grid-cell[data-col-interval-index="${index}"]`);
+        let colHideCells = this.l_gridCellContainer.querySelectorAll(`.hiddenCellCol[data-col-interval-index="${index}"]`);
+        let headerHideColHeaders3 = this.l_columnHeadersContainer.querySelectorAll(`.hideColHeader3[data-interval-index="${index}"]`);
+        let headerColHeaders3 = this.l_columnHeadersContainer.querySelectorAll(`.colHeader3[data-interval-index="${index}"]`);
+
         if (isMinus) {
-            p_btn.textContent = "+";
-            p_btn.classList.remove("minus-btn");
-            p_btn.classList.add("plus-btn");
+            // Masquer les cellules de la colonne
+            colCells.forEach(cell => {
+                cell.classList.add('hidden');
+            });
+            colHideCells.forEach(hideCell => {
+                hideCell.classList.remove('hidden');
+            });
 
-            if (p_type === "column") {
-                this.toggleHeaders(p_frame.dataset.intervalIndex, false, "column");
-            } else if (p_type === "row") {
-                this.toggleHeaders(p_frame.dataset.rowIntervalIndex, false, "row");
-            }
+            // Gérer les en-têtes de colonnes
+            headerHideColHeaders3.forEach(header => {
+                header.classList.remove('hidden');
+                header.style.gridColumn = `span 8`;
+                header.style.width = `166px`;
+            });
+            headerColHeaders3.forEach(header => {
+                header.classList.add('hidden');
+            });
+
+            // Synchroniser la visibilité des lignes affectées par la colonne
+            this.l_gridCellContainer.querySelectorAll(`[data-col-interval-index="${index}"]`).forEach(cell => {
+                let rowIndex = cell.getAttribute('data-row');
+                // Masquer les cellules correspondantes dans la ligne
+                if (this.isHideRowVisible) {
+                    let rowCells = this.l_gridCellContainer.querySelectorAll(`[data-row="${rowIndex}"]`);
+                    rowCells.forEach(rowCell => {
+                        rowCell.classList.add('hidden');
+                    });
+                }
+            });
+
+            this.isHideColVisible = !this.isHideColVisible; // Mettre à jour l'état de la colonne
         } else {
-            p_btn.textContent = "-";
-            p_btn.classList.remove("plus-btn");
-            p_btn.classList.add("minus-btn");
+            // Réafficher les cellules de la colonne et masquer les cellules cachées
+            colCells.forEach(cell => {
+                cell.classList.remove('hidden');
+            });
+            colHideCells.forEach(hideCell => {
+                hideCell.classList.add('hidden');
+            });
 
-            if (p_type === "column") {
-                this.toggleHeaders(p_frame.dataset.intervalIndex, true, "column");
-            } else if (p_type === "row") {
-                this.toggleHeaders(p_frame.dataset.rowIntervalIndex, true, "row");
+            // Gérer les en-têtes des colonnes
+            headerHideColHeaders3.forEach(header => {
+                header.classList.add('hidden');
+            });
+            headerColHeaders3.forEach(header => {
+                header.classList.remove('hidden');
+            });
+
+            this.isHideColVisible = !this.isHideColVisible; // Remettre l'état de la colonne à visible
+
+            // Ré-afficher toutes les lignes si visibles
+            if (this.isHideRowVisible) {
+                this.l_gridCellContainer.querySelectorAll(`[data-row]`).forEach(cell => {
+                    let rowIndex = cell.getAttribute('data-row');
+                    cell.classList.remove('hidden');
+                });
             }
         }
     }
+
+
+    toggleRow(index, isMinus) {
+        // Toggle the visibility of the hidden row
+        let rowCells = this.l_gridCellContainer.querySelectorAll(`.grid-cell[data-row-interval-index="${index}"]`);
+        let rowHideCells = this.l_gridCellContainer.querySelectorAll(`.hiddenCellRow[data-row-interval-index="${index}"]`);
+        let headerHideRowHeader3 = this.l_rowHeadersContainer.querySelectorAll(`.hideRowHeader3[data-interval-index="${index}"]`);
+        let headerRowHeaders3 = this.l_rowHeadersContainer.querySelectorAll(`.rowHeader3[data-interval-index="${index}"]`);
+
+        if (isMinus) {
+            // Masquer les cellules de la ligne
+            rowCells.forEach(cell => {
+                cell.classList.add('hidden');
+            });
+
+            rowHideCells.forEach(hideCell => {
+                hideCell.classList.remove('hidden');
+            });
+
+            // Gérer les en-têtes de lignes
+            headerHideRowHeader3.forEach(header => {
+                header.classList.remove('hidden');
+                header.classList.add('flex');
+                header.style.gridRow = `span 8`;
+                header.style.height = `167px`;
+            });
+            headerRowHeaders3.forEach(header => {
+                header.classList.remove('flex');
+                header.classList.add('hidden');
+            });
+
+            this.isHideRowVisible = !this.isHideRowVisible; // Mettre à jour l'état de la ligne
+
+            // Synchroniser la visibilité des colonnes affectées par la ligne
+            this.l_gridCellContainer.querySelectorAll(`[data-row-interval-index="${index}"]`).forEach(cell => {
+                let colIndex = cell.getAttribute('data-col');
+                // Masquer les cellules correspondantes dans la colonne
+                if (this.isHideColVisible) {
+                    let colCells = this.l_gridCellContainer.querySelectorAll(`[data-col="${colIndex}"]`);
+                    colCells.forEach(colCell => {
+                        colCell.classList.add('hidden');
+                    });
+                }
+            });
+
+        } else {
+            // Réafficher les cellules de la ligne et masquer les cellules cachées
+            rowCells.forEach(cell => {
+                cell.classList.remove('hidden');
+            });
+
+            rowHideCells.forEach(hideCell => {
+                hideCell.classList.add('hidden');
+            });
+
+            // Gérer les en-têtes des lignes
+            headerHideRowHeader3.forEach(header => {
+                header.classList.remove('flex');
+                header.classList.add('hidden');
+                header.style.gridRow = `span 1`;
+                header.style.height = ``;
+            });
+
+            headerRowHeaders3.forEach(header => {
+                header.classList.remove('hidden');
+            });
+
+            this.isHideRowVisible = !this.isHideRowVisible; // Remettre l'état de la ligne à visible
+
+            // Ré-afficher toutes les colonnes si visibles
+            if (this.isHideColVisible) {
+                this.l_gridCellContainer.querySelectorAll(`[data-col]`).forEach(cell => {
+                    let colIndex = cell.getAttribute('data-col');
+                    cell.classList.remove('hidden');
+                });
+            }
+        }
+    }
+
 
     toggleHeaders(p_intervalIdx, p_show, p_type) {
-        if (p_type === "column") {
-            console.log("Traitement des colonnes...");
+        try {
+            if (p_show) {
+                this.l_colHeader2.style.columnSpan = "4";
 
-            const colHeaders1 = document.querySelectorAll(`th.colHeader1[data-interval-index='${p_intervalIdx}']`);
-            colHeaders1.forEach(header => {
-                header.style.display = p_show ? "" : "none";
-            });
-
-            const colHeaders2 = document.querySelectorAll(`th.colHeader2[data-interval-index='${p_intervalIdx}']`);
-            colHeaders2.forEach(header => {
-                header.colSpan = p_show ? 8 : 2;
-            });
-
-            const colHeaders3 = document.querySelectorAll(`th.colHeader3[data-interval-index='${p_intervalIdx}']`);
-            colHeaders3.forEach((header, index) => {
-                const colIndex = p_intervalIdx * 8 + index + 1;
-                const gridCells = document.querySelectorAll(`td[data-col='${colIndex}']`);
-
-                if (p_show) {
-                    header.style.display = ""
-                    gridCells.forEach(cell => {
-                        cell.style.display = "";
-                    });
-                } else {
-                    header.style.display = "none";
-                    gridCells.forEach(cell => {
-                        cell.style.display = "none";
-                    });
+                //Colonnes
+                this.l_colHeader3.classList.add ("hidden");
+                if (this.l_hideColHeader3.classList.contains("hidden")) {
+                    this.l_hideColHeader3.classList.remove ("hidden");
+                    this.l_hideColHeader3.style.display = "flex";
                 }
-            });
 
-            const hideColHeader3 = document.querySelectorAll(`th.hideColHeader3[data-interval-index='${p_intervalIdx}']`);
-            hideColHeader3.forEach(header => {
-                header.style.display = p_show ? "none" : "";
-            });
-
-            const hideFoldColumn = document.querySelectorAll(`td.hideFoldColumn[data-interval-index='${p_intervalIdx}']`);
-            console.log("hideFoldColumn:", hideFoldColumn);
-
-            hideFoldColumn.forEach(cell => {
-                cell.style.display = p_show ? "none" : "";
-
-            });
-
-        } else if (p_type === "row") {
-            console.log("Traitement des lignes...");
-            const rowHeaders1 = document.querySelectorAll(`th.rowHeader1[data-row-interval-index='${p_intervalIdx}']`);
-            rowHeaders1.forEach(header => {
-                header.style.display = p_show ? "" : "none";
-            });
-
-            const rowHeader2 = document.querySelectorAll(`th.rowHeader2[data-row-interval-index='${p_intervalIdx}']`);
-            rowHeader2.forEach(header => {
-                header.rowSpan = p_show ? 8 : 1;
-            });
-
-            const rowHeaders3 = document.querySelectorAll(`th.rowHeader3[data-row-interval-index='${p_intervalIdx}']`);
-            rowHeaders3.forEach((header, index) => {
-                const rowIndex = p_intervalIdx * 8 + index + 1;
-                const gridCells = document.querySelectorAll(`td[data-row='${rowIndex}']`);
-
-                if (gridCells && p_show) {
-                    header.style.display = "";
-                    gridCells.forEach(cell => {
-                        cell.style.display = "";
-                    });
-                } else {
-                    header.style.display = "none";
-                    gridCells.forEach(cell => {
-                        cell.style.display = "none";
-                    });
+                //Lignes
+                this.l_rowHeader3.classList.add ("hidden");
+                if (this.l_hideRowHeader3.classList.contains("hidden")) {
+                    this.l_hideRowHeader3.classList.remove("hidden")
                 }
-            });
 
-            const hideRowHeader3 = document.querySelectorAll(`th.hideRowHeader3[data-row-interval-index='${p_intervalIdx}']`);
-            hideRowHeader3.forEach(header => {
-                header.style.display = p_show ? "none" : "";
-            });
-        } else {
-            console.error("Type non reconnu. Utilisez 'column' ou 'row'.");
+                //Grille
+                this.cell.classList.add ("hidden");
+                if(this.l_hiddenCell.classList.contains("hidden")) {
+                    this.l_hiddenCell.classList.remove("hidden")
+                }
+            } else {
+                //Colonnes
+                if (this.l_colHeader3.classList.contains ("hidden")){
+                    this.l_colHeader3.classList.remove ("hidden");
+                }
+                this.l_hideColHeader3.classList.add ("hidden");
+
+                //Lignes
+                if (this.l_rowHeader3.classList.contains ("hidden")){
+                    this.l_rowHeader3.classList.remove ("hidden");
+                }
+                this.l_hideRowHeader3.classList.add ("hidden");
+
+                //Grille
+                if(this.cell.classList.contains ("hidden")) {
+                    this.cell.classList.remove ("hidden");
+                }
+                this.l_hiddenCell.classList.add("hidden");
+            }
+        } catch (error) {
+            console.error(`Erreur lors de l'exécution de toggleHeaders : ${error}`);
         }
     }
-
 }
 
 function createGridMatrix(p_containerSelector, p_numColumns, p_numRows, p_cellSize) {
-    return new tableMatrix(p_containerSelector, p_numColumns, p_numRows, p_cellSize);
+    return new gridMatrix(p_containerSelector, p_numColumns, p_numRows, p_cellSize);
 }
 
 createGridMatrix("#matrixMixer", 64, 64, 19)

@@ -12,32 +12,9 @@ body {
   border-bottom: 1px solid darkblue;
 }
 
-.container {
-  padding: 20px;
-}
-
-button {
-  padding: 5px 10px;
-  background-color: #555;
-  color: white;
-  border: none;
-  cursor: pointer;
-  margin-right: 5px;
-}
-
-button:hover {
-  background-color: #777;
-}
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #292929;
-}
-
 .matrixMixer {
   position: relative;
-  overflow:hidden;
+  overflow:scroll;
 }
 
 /******* Container des boutons *******/
@@ -62,24 +39,14 @@ body {
   background-color: #777;
 }
 
-/******* Tableau Matrix *******/
-.matrixTable {
-  border-collapse: collapse;
-  overflow: hidden;
-}
-
-.matrixTable th, .matrixTable td {
-  border: 1px solid #555;
-}
-
-.matrixTable th {
+/******* Grid Matrix *******/
+.header {
   background-color: #444;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  /*border: 1px solid red;*/
 }
 
-.matrixTable td {
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  cursor: cell;
-}
+/******* Specific *******/
 
 .borderBottom{
   border-bottom: 2px solid rgba(255, 255, 255, 0.13);
@@ -91,25 +58,26 @@ body {
 
 .hovered {
   border: 1px solid darkgray;
-;
 }
-.matrixTable td.active {
+
+.active {
   background-color: #3a3;
 }
 
-.matrixTable td.disabled {
+.disabled {
   background-color: #555;
 }
 
-.grid-cell{
-  background-color: #222;
-  color: white;
+.hidden{
+  display: none;
+}
+
+.flex {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .highlight {
   background-color: rgba(255, 255, 255, 0.20);
-}
-
-.hidden {
-  display: none;
 }
