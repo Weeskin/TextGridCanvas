@@ -1,3 +1,15 @@
+:root{
+  --main-bg-color: #212121;
+  --main-bg-grid-color: #222;
+  --cellSize : 19px;
+  --cols : 0; /* Nombre de colonnes */
+  --rows : 0; /* Nombre de lignes */
+  --cols-length : 0 ;/* Nombre de machine*/
+  --rows-length : 0 ;/* Nombre de machine*/
+  --total-cols-length :  calc(var(--cols) * (var(--cols-length) - 1));
+  --total-rows-length :  calc(var(--rows) * (var(--rows-length) - 1));
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -12,12 +24,17 @@ body {
   border-bottom: 1px solid darkblue;
 }
 
-.matrixMixer {
-  position: relative;
+/********************************************************************************************************************************************
+                                                                 Onglet
+                                                          Matrix Grid Container
+********************************************************************************************************************************************/
+
+#matrixMixer {
   overflow:scroll;
+  padding: 15px;
 }
 
-/******* Container des boutons *******/
+/* Container des boutons */
 
 .btnContainer {
   margin-bottom: 10px;
@@ -33,17 +50,204 @@ body {
   border: none;
   cursor: pointer;
   margin-right: 5px;
+  border-radius: 5px;
 }
 
 .btnContainer button:hover{
   background-color: #777;
 }
 
-/******* Grid Matrix *******/
-.header {
+.minus-btn, .plus-btn {
+  background-color: transparent;
+  color: white;
+  width: var(--cellSize);
+  border: 1px solid white;
+  border-radius: 25%;
+  margin-left: 5px;
+}
+
+/********************************************************************************************************************************************
+                                                                 Matrix
+                                                            Grid Container
+********************************************************************************************************************************************/
+.matrixContainer{
+  display: grid;
+  width: fit-content;
+  height: fit-content;
+  grid-template-columns: repeat(2 , auto);
+  grid-template-rows: repeat(2, auto);
+}
+
+.headers{
   background-color: #444;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  /*border: 1px solid red;*/
+}
+
+.emptyContainer{
+  border-top: 1px solid #ffffff21;
+  border-right: 2px solid #ffffff21;
+  border-bottom: 2px solid #ffffff21;
+  border-left :  1px solid #ffffff21;
+  border-top-left-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/***** Columns Container *****/
+
+.columnsContainer{
+  display: grid;
+  grid-template-columns: repeat(calc(var(--cols-length) - 1) , auto);
+}
+
+[class^="columnHeaders"] {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), auto);
+}
+
+.colHeader1{
+  border-top: 4px solid darkgreen;
+  border-left: 2px solid #ffffff21;
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 0 0 5px;
+  height: calc(var(--cellSize) * 5);
+  grid-column: span var(--cols);
+}
+
+.colHeader2{
+  border-right: 2px solid #ffffff21;
+  text-align: right;
+  vertical-align: top;
+  padding: 5px;
+  position: relative;
+  height: calc(var(--cellSize) * 3);
+  grid-column: span calc(var(--cols)/8);
+}
+.colHeader2Content{
+  position: absolute;
+  rotate: -90deg;
+  top : 25% ;
+}
+
+.colHeader3{
+  display: flex;
+  position: relative;
+  grid-row: span var(--cols);
+  width: 100%;
+  height: 70px;
+}
+
+.colHeader3Content{
+  position: absolute;
+  padding: 2px 2px;
+  z-index : 2;
+  transform: rotate(-90deg) ;
+  transform-origin: top left;
+  top: 98%
+}
+
+.hideColHeader3{
+  position: relative;
+  grid-column: span 1;
+  border-right: 2px solid #ffffff21;
+  height: var(--cellSize);
+}
+
+.hideColHeader3Content{
+  position: absolute;
+  text-align: center;
+  top: 14%;
+  left: 48%;
+  rotate: -90deg;
+}
+
+/***** Rows Container *****/
+[class^="rowHeaders"] {
+  display: grid;
+  grid-template-columns: repeat(3,max-content);
+  grid-template-rows: repeat(var(--rows), auto);
+  grid-auto-flow: column;
+}
+
+.rowHeader1{
+  border-left: 4px solid darkgreen;
+  padding: 5px 0 0 5px;
+  width: calc(var(--cellSize) * 5);
+  grid-row: span var(--rows);
+}
+
+.rowHeader2{
+  padding: 5px 0 0 5px;
+  width : calc(var(--cellSize) * 4);
+  grid-row: span calc(var(--rows)/8);
+}
+
+.rowHeader3{
+  width: auto;
+  height: var(--cellSize);
+  grid-row: span calc(var(--rows)/64);
+  padding: 0 7px;
+}
+
+.hideRowHeader3{
+  grid-row: span 1;
+  min-width: var(--cellSize);
+  border-bottom: 2px solid #ffffff21;
+}
+
+/***** Cells Container *****/
+.cellsContainer{
+  display: grid;
+  grid-template-columns: repeat(calc( var(--cols-length) - 1 ), auto);
+
+}
+[class^="gridCellContainer"] {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), auto);
+  grid-template-rows: repeat(var(--rows),max-content);
+  background-color: var(--main-bg-grid-color);
+  color: white;
+  text-align: center;
+}
+
+.cell{
+  width: var(--cellSize);
+  height: var(--cellSize);
+  cursor: pointer;
+  border: 1px solid #ffffff21;
+}
+
+/* inputBox */
+
+.inputBox{
+  position: relative;
+  width: var(--cellSize);
+  height: var(--cellSize);
+  font-size: 11px;
+  left: -5px;
+  top: -5px;
+  text-align: center;
+  align-items: center;
+}
+
+/* Cross hair */
+
+.mixerGridInfos{
+  color: #FFFFB4bb;
+  rotate: -90deg;
+  position: absolute;
+  left: calc((var(--cellSize) * 4) - 3px);
+  white-space: nowrap;
+}
+
+.outputGridInfos{
+  color: #FFFFB4bb;
+  position: absolute;
+  left: var(--cellSize);
+  top:  calc((var(--cellSize) * 2) + 12px);
+  white-space: nowrap;
 }
 
 /******* Specific *******/
@@ -81,3 +285,4 @@ body {
 .highlight {
   background-color: rgba(255, 255, 255, 0.20);
 }
+
