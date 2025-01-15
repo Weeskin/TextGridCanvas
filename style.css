@@ -1,13 +1,6 @@
-:root{
+:root {
   --main-bg-color: #212121;
   --main-bg-grid-color: #222;
-  --cellSize : 19px;
-  --cols : 0; /* Nombre de colonnes */
-  --rows : 0; /* Nombre de lignes */
-  --cols-length : 0 ;/* Nombre de machine*/
-  --rows-length : 0 ;/* Nombre de machine*/
-  --total-cols-length :  calc(var(--cols) * (var(--cols-length) - 1));
-  --total-rows-length :  calc(var(--rows) * (var(--rows-length) - 1));
 }
 
 body {
@@ -25,241 +18,231 @@ body {
 }
 
 /********************************************************************************************************************************************
-                                                                 Onglet
-                                                          Matrix Grid Container
-********************************************************************************************************************************************/
-
-#matrixMixer {
-  overflow:scroll;
-  padding: 15px;
-}
-
-/* Container des boutons */
-
-.btnContainer {
-  margin-bottom: 10px;
-}
-
-.btnContainer button {
-  width :100px;
-  text-align: center;
-  height: 48px;
-  padding: 5px 10px;
-  background-color: #555;
-  color: white;
-  border: none;
-  cursor: pointer;
-  margin-right: 5px;
-  border-radius: 5px;
-}
-
-.btnContainer button:hover{
-  background-color: #777;
-}
-
-.minus-btn, .plus-btn {
-  background-color: transparent;
-  color: white;
-  width: var(--cellSize);
-  border: 1px solid white;
-  border-radius: 25%;
-  margin-left: 5px;
-}
-
-/********************************************************************************************************************************************
                                                                  Matrix
                                                             Grid Container
 ********************************************************************************************************************************************/
-.matrixContainer{
-  display: grid;
-  width: fit-content;
-  height: fit-content;
-  grid-template-columns: repeat(2 , auto);
-  grid-template-rows: repeat(2, auto);
+#mixerMatrixContent {
+  --main-bg-color: #212121;
+  --main-bg-grid-color: #444;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
-.headers{
-  background-color: #444;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+.crossWidth{
+  width:25px;
+}
+
+.crossHeight{
+  height:25px;
+}
+
+
+/***** Columns *****/
+.columnsContainer  {
+  display: flex;
+  width: auto;
+  border-collapse: collapse;
 }
 
 .emptyContainer{
-  border-top: 1px solid #ffffff21;
-  border-right: 2px solid #ffffff21;
-  border-bottom: 2px solid #ffffff21;
-  border-left :  1px solid #ffffff21;
+  min-width: 236px;
   border-top-left-radius: 5px;
+}
+
+[class*="colCardName"] {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  text-align: left;
+  border-top: 5px solid darkgreen;
+  border-bottom: none;
+  background-color: #444;
+}
+
+.colCardTitle{
+  padding: 5px 0 0 5px;
+}
+
+.divForAllColChannelsGroups{
+  display: flex;
+  flex-direction: row;
+}
+
+.colChannelGroups{
+  display:flex;
+  flex-direction: column;
+  border-collapse: collapse;
+  text-align: left;
+  position: relative;
+
+}
+
+.colChannelGroupsTitle{
+  /*margin-bottom: 60px;*/
+  /*margin-top: 10px;*/
+  gap: 10px;
+  display: flex;
+  place-items: center;
+  justify-content: end;
+  transform: rotate(-90deg);
+  width: 88px;
+  position:absolute;
+  left: -32px;
+  top: 50px
+}
+
+.divForAllColChannelsNames{
+  display: flex;
+  border-collapse: collapse;
+  flex-direction: row;
+  margin-top: 121px;
+}
+
+.colChannelName{
+  display: flex;
+  flex-flow: column-reverse;
+  position: relative;
+  height: 100px;
+  border-right: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.colChannelNameTitle{
+  position: absolute;
+  transform: rotate(-90deg) ;
+  transform-origin: top left;
+  top: 70%;
+  width: 70px;
+}
+
+.colVuMeterMatrixMixerCanvas {
+  width: 20px;
+  height: 3px;
+  background-color : #103010;
+  border-radius: 5px ;
+  cursor: pointer;
+  rotate: -90deg;
+  margin-bottom: 11px;
+}
+
+/***** Rows  *****/
+.rowsContainer{
+  display:flex;
+  border-collapse: collapse;
+  border-left: 5px solid darkgreen;
+  width: 100%;
+}
+
+[class*="rowCardName"] {
+  display: flex;
+  position: relative;
+  transform-origin: center;
+  background-color: #444;
+}
+
+.rowCardTitle {
+  display: flex;
+  width: 45px;
+  transform: rotate(-90deg);
+  justify-content: flex-end;
   align-items: center;
 }
 
-/***** Columns Container *****/
-
-.columnsContainer{
-  display: grid;
-  grid-template-columns: repeat(calc(var(--cols-length) - 1) , auto);
-}
-
-[class^="columnHeaders"] {
-  display: grid;
-  grid-template-columns: repeat(var(--cols), auto);
-}
-
-.colHeader1{
-  border-top: 4px solid darkgreen;
-  border-left: 2px solid #ffffff21;
-  text-align: left;
-  vertical-align: top;
-  padding: 5px 0 0 5px;
-  height: calc(var(--cellSize) * 5);
-  grid-column: span var(--cols);
-}
-
-.colHeader2{
-  border-right: 2px solid #ffffff21;
-  text-align: right;
-  vertical-align: top;
-  padding: 5px;
-  position: relative;
-  height: calc(var(--cellSize) * 3);
-  grid-column: span calc(var(--cols)/8);
-}
-.colHeader2Content{
-  position: absolute;
-  rotate: -90deg;
-  top : 25% ;
-}
-
-.colHeader3{
+.divForAllRowChannelsGroups{
   display: flex;
+  flex-direction: column;
+}
+
+.rowChannelGroups{
+  display: flex;
+  flex-direction: row;
+  border-collapse: collapse;
+  text-align: left;
   position: relative;
-  grid-row: span var(--cols);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.rowChannelGroupsTitle{
+  display:flex;
+  gap: 10px;
+  /*align-items: center;*/
+  width: 96px;
+  /*place-items: center;*/
+  /*transform: rotate(-90deg);*/
+  /*transform-origin: center;*/
+}
+
+.divForAllRowChannelsNames{
+  display: flex;
   width: 100%;
-  height: 70px;
+  flex-direction: column;
 }
 
-.colHeader3Content{
-  position: absolute;
-  padding: 2px 2px;
-  z-index : 2;
-  transform: rotate(-90deg) ;
-  transform-origin: top left;
-  top: 98%
+.rowChannelName{
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
 }
 
-.hideColHeader3{
-  position: relative;
-  grid-column: span 1;
-  border-right: 2px solid #ffffff21;
-  height: var(--cellSize);
-}
-
-.hideColHeader3Content{
-  position: absolute;
+.rowChannelNameTitle {
+  flex-grow: 1;
+  align-content: center;
   text-align: center;
-  top: 14%;
-  left: 48%;
-  rotate: -90deg;
-}
-
-/***** Rows Container *****/
-[class^="rowHeaders"] {
-  display: grid;
-  grid-template-columns: repeat(3,max-content);
-  grid-template-rows: repeat(var(--rows), auto);
-  grid-auto-flow: column;
-}
-
-.rowHeader1{
-  border-left: 4px solid darkgreen;
-  padding: 5px 0 0 5px;
-  width: calc(var(--cellSize) * 5);
-  grid-row: span var(--rows);
-}
-
-.rowHeader2{
-  padding: 5px 0 0 5px;
-  width : calc(var(--cellSize) * 4);
-  grid-row: span calc(var(--rows)/8);
-}
-
-.rowHeader3{
-  width: auto;
-  height: var(--cellSize);
-  grid-row: span calc(var(--rows)/64);
-  padding: 0 7px;
-}
-
-.hideRowHeader3{
-  grid-row: span 1;
-  min-width: var(--cellSize);
-  border-bottom: 2px solid #ffffff21;
-}
-
-/***** Cells Container *****/
-.cellsContainer{
-  display: grid;
-  grid-template-columns: repeat(calc( var(--cols-length) - 1 ), auto);
-
-}
-[class^="gridCellContainer"] {
-  display: grid;
-  grid-template-columns: repeat(var(--cols), auto);
-  grid-template-rows: repeat(var(--rows),max-content);
-  background-color: var(--main-bg-grid-color);
-  color: white;
-  text-align: center;
+  width: 70px;
 }
 
 .cell{
-  width: var(--cellSize);
-  height: var(--cellSize);
-  cursor: pointer;
-  border: 1px solid #ffffff21;
+  display: flex;
+  border-right: 1px solid rgba(255, 255, 255, 0.13);
+  background-color: #555;
+  justify-content: center;
+  align-items: center;
+  font-size:10px;
+}
+
+.cell:hover{
+  font-size:14px;
+}
+
+.minus-btn, .plus-btn {
+  display: flex;
+  background-color: transparent;
+  color: white;
+  border: 1px solid white;
+  border-radius: 25%;
+  margin-left: auto;
 }
 
 /* inputBox */
-
-.inputBox{
-  position: relative;
-  width: var(--cellSize);
-  height: var(--cellSize);
+.inputBox {
+  position: absolute;
   font-size: 11px;
-  left: -5px;
-  top: -5px;
   text-align: center;
   align-items: center;
+  border-radius: 5px;
+  z-index: 1000;
 }
 
-/* Cross hair */
-
+/*Grid Infos*/
 .mixerGridInfos{
   color: #FFFFB4bb;
-  rotate: -90deg;
-  position: absolute;
-  left: calc((var(--cellSize) * 4) - 3px);
-  white-space: nowrap;
+  transform: rotate(-90deg);
+  transform-origin: left;
+  padding: 6px 0 0 21px;
+  text-align: center;
+  width: 100%;
 }
 
 .outputGridInfos{
   color: #FFFFB4bb;
   position: absolute;
-  left: var(--cellSize);
-  top:  calc((var(--cellSize) * 2) + 12px);
+  left: -84px;
+  top:  -8px;
   white-space: nowrap;
 }
 
 /******* Specific *******/
-
-.borderBottom{
-  border-bottom: 2px solid rgba(255, 255, 255, 0.13);
-}
-
-.borderRight{
-  border-right: 2px solid rgba(255, 255, 255, 0.13);
-}
-
 .hovered {
   border: 1px solid darkgray;
 }
@@ -276,13 +259,16 @@ body {
   display: none;
 }
 
-.flex {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .highlight {
   background-color: rgba(255, 255, 255, 0.20);
 }
 
+.rowVuMeterMatrixMixerCanvas {
+  width: 20px;
+  height: 3px;
+  background-color : #103010;
+  border-radius: 5px ;
+  cursor: pointer;
+  rotate: -90deg;
+  margin-top: 8px;
+}

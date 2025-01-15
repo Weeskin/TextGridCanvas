@@ -1,53 +1,140 @@
+"use strict"
+/*
+    +---------------------------+-------------------------------------------------------------------------------------------------------------+
+    |                                          |     e_matrixMixerComponents.AudioSources                                                                                                |
+    |                                          |  +-----------------------------------------------------------------------------------------------------+       |
+|                                              |  |       e_matrixMixerHeaders.cardName                                                                                               |       |
+    |                                          |  | +------------------------------------+----------------------------------------------------+ +---+-----|   |
+    |                                          |  | | e_matrixMixerHeaders.channelGroupe |                                                                         | |  ...  | ...     ||  |
+    |                                          |  | | +-------------+  +-------------+   |                                                                                 | |       |         ||  |
+    |                                          |  | | | channelName |  | channelName   |   |                                                                               | |       |         ||  |
+    |                                          |  | | +-------------+  +-------------+   |                                                                                  | |       |         ||  |
+    |                                          |  | +------------------------------------+-----------------------------------------+ +-------+---------------+|  |
+    |                                          |  +--------------------------------------------------------------------------------------------------------+  |
+    |                                          |                                                                                                                                                                    |
+    |                                          |  +--------------------------------------------------------------------------------------------------------+  |
+    |                                          |  |                          e_matrixMixerHeaders.channelType                                                                         |  |
+    |                                          |  +--------------------------------------------------------------------------------------------------------+  |
+    +---------------------------+--------------------------------------------------------------------------------------------------------------+
+    |   e_matrixMixerComponents |  e_matrixMixerComponents.mixDisplay                                                                                                      |
+    |   AudioReceiver                     |   +-----------------------------------------------------------------------------------------------------+ +
+    |                                                |  | e_matrixMixerCells.cells                                                                                                                   | |
+    |                                                |  | +--------------------+  +--------------------+ +-----+ +--------------------+                                 | |
+    |                                                |  | | e_matrixMixerCells |  | e_matrixMixerCells | | ... | | e_matrixMixerCells         |                                  | |
+    |                                                |  | | cellSimple               |  | cellSimple               | |     | | cellResumes                  |                                  | |
+    |                                                |  | +--------------------+  +--------------------+ +-----+ +--------------------+                                 | |
+    |                                                |  +-----------------------------------------------------------------------------------------------------+ |
+    +-------------------------------+----------------------------------------------------------------------------------------------------------+
+*/
+
 const e_matrixMixerComponents = {
-    AudioSources : 0 ,
-    AudioReceiver : 1 ,
+    AudioSources : 0,
+    AudioReceiver : 1,
     mixDisplay : 2,
     last : 3
 };
 
 const e_matrixMixerHeaders = {
-    cardMachine : 0 ,
-    cardName : 1 ,
-    channelGroupe : 2 ,
-    channelName : 3 ,
-    channelResume : 4 ,
-    last : 5
+    cardName : 0 ,
+    channelGroupe : 1 ,
+    channelName : 2 ,
+    last : 3
 };
 
+const e_matrixMixerCells = {
+    cells : 0,
+    last: 1
+}
+
+//Énum pour spécifier les deux div (alias et vuMeter) au sein de ChannelName lié à l'appel de la fonction childNodes
+const e_channelNameContent = {
+    alias : 0 ,
+    vuMeter : 1,
+    last : 2
+};
+
+
 class gridMatrix {
-    constructor(p_containerSelector, p_numColumns, p_numRows, p_cellSize) {
-        this.m_matrixMixer = document.querySelector(p_containerSelector);
-        this.m_cols = p_numColumns;
-        this.m_rows = p_numRows;
-        this.m_cellSize = p_cellSize;
+    constructor(p_containerSelector) {
         this.m_ChannelGroupeRange = 8 ;
-        this.m_AudioWay = e_AudioWay.input;
-        this.m_expansionLevel = 3;
-        this.isHideColVisible = false
-        this.isHideRowVisible = false
-        this.m_isSelecting = false;
-        this.m_isDragging = false;
-        this.m_isSpacePressed = false;
-
+        this.m_nbCards = 1 ;
+        this.m_nbCols = 64;
+        this.m_nbRows = 64
+        this.m_matrixMixer = document.getElementById(p_containerSelector);
         this.m_matrixMixerData = new Array(e_matrixMixerComponents.last);
-        this.initMatrixMixerData()
+        // this.m_AudioWay = e_AudioWay.input;
+        this.m_AudioWay = 0;
+        this.m_AudioWayMixerInput = 1
+        // Save trim min only channel zero , all the same .
+        // this.m_minTrim = g_Gui.getDevice().getMixerChanGainMin (e_AudioWay.mixerInput , 0 , 0 );
+        this.m_minTrim = -80.1
+        // this.m_matrixMixerControl = g_Gui.getMixerControl();
+        this.m_cardAlias = ["ADSP-Pierre"]
+        this.m_nbCards = this.m_cardAlias.length;
 
-        this.initGridMatrix();
+
+        this.init(this.m_nbCards, this.m_AudioWay, this.m_nbCols);
+    }
+    // updateMatrixMixerCardName(p_cardIdx) {
+    //     //Récupération des noms de cartes
+    //     const l_cardAlias = this.m_cardAlias
+    //
+    //     const audioSourcesCardName = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.cardName];
+    //     const audioReceiverCardName = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.cardName];
+    //
+    //     if (audioSourcesCardName.length > p_cardIdx && audioSourcesCardName[p_cardIdx].childNodes.length > e_channelNameContent.alias) {
+    //         audioSourcesCardName[p_cardIdx].childNodes[e_channelNameContent.alias].textContent = l_cardAlias;
+    //     }
+    //     if (audioReceiverCardName.length > p_cardIdx && audioReceiverCardName[p_cardIdx].childNodes.length > e_channelNameContent.alias) {
+    //         audioReceiverCardName[p_cardIdx].childNodes[e_channelNameContent.alias].textContent = l_cardAlias;
+    //     }
+    // }
+    //
+    // updateMatrixMixerChannelName(p_audioWay, p_channelIdx) {
+    //     // Récupération des noms de canaux
+    //     const l_channelAlias = ["Mic Yves", "Mic Pierre", "Test3", "Mic toto", "Input 5",  "Input 6", "Input 7",  "Input 8","Input 9", "Input 10", "Test 2", "Input 12",  "Input 13",
+    //         "Input 14", "Input 15", "Input 16","Input 17","Input 18",  "Input 19","Input 20",  "Input 21",  "Input 22",   "Input 23", "Input 24",  "Input 25","Input 26", "Input 27",
+    //         "Input 28",  "Input 29",  "Input 30",  "Input 31",  "Input 32",  "Input 33",  "Input 34",  "Input 35",  "Input 36",  "Input 37",  "Input 38",   "Input 39",
+    //         "Input 40","Input 41","Input 42","Input 43","Input 44","Input 45","Input 46","Input 47","Input 48","Input 49","Input 50","Input 51","Input 52", "Input 53",
+    //         "Input 54","Input 55", "Input 56", "Input 58", "Input 59", "Input 60", "Input 61", "Input 62", "Input 63", "Input 64",
+    //         "Salle A",
+    //         "Salle r2",
+    //         "Mixer 4",
+    //         "Test out"]
+    //     let l_matrixMixerData = this.m_matrixMixerData[(p_audioWay === this.m_AudioWay) ? e_matrixMixerComponents.AudioSources : e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName];
+    //     if (l_matrixMixerData.length > p_channelIdx && l_matrixMixerData[p_channelIdx].childNodes.length > e_channelNameContent.alias) {
+    //         l_matrixMixerData[p_channelIdx].childNodes[e_channelNameContent.alias].textContent = l_channelAlias;
+    //     }
+    // }
+
+
+    init(p_nbCards, p_audioWay, p_nbCols) {
+        console.log(this.m_matrixMixerData);
+        this.initAnEmptyMatrixMixerData();
+        // this.updateMatrixMixerCardName(p_nbCards);
+        // this.updateMatrixMixerChannelName(p_audioWay, p_nbCols);
+        // Création des deux div Columns et Rows l'une sur l'autre
+        this.createMixerDataHeaders(true, );
+        this.createMixerDataHeaders(false, );
+
+        this.addEventListeners();
     }
 
-    //Init Data
-    initMatrixMixerData(){
+    initAnEmptyMatrixMixerData(){
+        //Initialisation de tableau vide pour chaque carte
         for ( let l_mixerComponentIdx = 0 ; l_mixerComponentIdx < e_matrixMixerComponents.last ; l_mixerComponentIdx ++){
+            this.m_matrixMixerData[l_mixerComponentIdx] = [];
             switch(l_mixerComponentIdx){
                 case e_matrixMixerComponents.AudioSources:
                 case e_matrixMixerComponents.AudioReceiver:
-                    this.m_matrixMixerData[l_mixerComponentIdx] = [];
                     for ( let l_MixerHeadersIdx = 0 ; l_MixerHeadersIdx < e_matrixMixerHeaders.last ; l_MixerHeadersIdx ++  ){
                         this.m_matrixMixerData[l_mixerComponentIdx][l_MixerHeadersIdx] = [];
                     }
                     break;
                 case e_matrixMixerComponents.mixDisplay:
-                    this.m_matrixMixerData[l_mixerComponentIdx] = []
+                    for (let l_mixerCellsIdx = 0 ; l_mixerCellsIdx < e_matrixMixerCells.last ; l_mixerCellsIdx ++) {
+                        this.m_matrixMixerData[l_mixerComponentIdx][l_mixerCellsIdx] = [];
+                    }
                     break;
                 default:
                     break;
@@ -55,975 +142,617 @@ class gridMatrix {
         }
     }
 
-    initGridMatrix() {
-        this.createMixerContext(this.m_matrixMixer, true)
-        this.updateGridDimensionsCSS()
-        this.addEventListeners();
+    initAnEmptyContainer() {
+        //Création container en haut à gauche vide
+        let l_emptyContainer = document.createElement("div");
+        l_emptyContainer.classList.add("emptyContainer");
+        return l_emptyContainer
     }
 
-    //Update Data //Est appelé Ailleurs
-    updateHeaders(p_audioWay, p_channelIdx) {
-        const l_cardAlias = g_Gui.getDevice().getAlias();
-        const l_nbCards = l_cardAlias ? 1 : 0;
-        const l_channelAlias = g_Gui.getDevice().getChanAlias(p_audioWay, p_channelIdx);
-        const l_numItems = 64;
+    createMixerDataHeaders(p_source) {
+        // Traitement des sources input = colonnes ou output = lignes
+        const l_matrixMixerData = this.m_matrixMixerData[p_source ? e_matrixMixerComponents.AudioSources : e_matrixMixerComponents.AudioReceiver];
+        const l_nbChannels = p_source ? this.m_nbCols : this.m_nbRows;
+        const l_tbxOfIntervals = this.getIntervals(l_nbChannels, this.m_ChannelGroupeRange);
+        const l_divHeaderContainer = document.createElement("div");
+        l_divHeaderContainer.classList.add(`${p_source ? "columns" : "rows"}Container`);
 
-        if (p_audioWay === e_AudioWay.input ) {
-            this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.cardMachine] = [{l_nbCards}];
-            this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.cardName] = [{l_cardAlias}];
-            this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelGroupe] = this.getIntervals(l_numItems,this.m_ChannelGroupeRange);
-            this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName].push({l_channelAlias});
-            this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelResume] = Array.from({ length: 8 }, (_, i) => i + 1)
-        } else {
-            if (l_channelAlias) {
-                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.cardMachine] = [{l_nbCards}];
-                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.cardName] = [{l_cardAlias}];
-                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName] = this.getIntervals(l_numItems,this.m_ChannelGroupeRange);
-                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName].push({l_channelAlias});
-                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelResume] = Array.from({length: 8}, (_, i) => i + 1);
-            } else {
-                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName].push(l_channelAlias);
-            }
+        if (p_source) {
+            l_divHeaderContainer.appendChild(this.initAnEmptyContainer());
         }
 
+        // Parcours des cards
+        for (let l_cardIdx = 0; l_cardIdx < this.m_nbCards; l_cardIdx++) {
+            // Ajout des en-têtes (colonne ou ligne) pour chaque carte
+            if (this.fctDrawHeaderContainer) {
+                let l_fctDrawHeaderContainer = this.fctDrawHeaderContainer(p_source, l_cardIdx);
+                l_matrixMixerData[e_matrixMixerHeaders.cardName].push(l_fctDrawHeaderContainer);
+                l_divHeaderContainer.appendChild(l_fctDrawHeaderContainer);
+
+                // Création d'une div pour rassembler les noms des intervals pour pouvoir les mettre en lignes ou en colonnes
+                let l_channelsGroups = document.createElement("div");
+                l_channelsGroups.classList.add(`divForAll${p_source ? "Col" : "Row"}ChannelsGroups`);
+                l_fctDrawHeaderContainer.appendChild(l_channelsGroups);
+
+                for (let l_IdxGrp = 0; l_IdxGrp < l_tbxOfIntervals.length; l_IdxGrp++) {  // ! \\ l_tbxOfIntervals basé sur this.m_ChannelGroupeRange = 8
+                    //Création des noms des intervals
+                    let l_fctDrawChannelGroups = this.fctDrawChannelGroups(p_source, l_cardIdx, l_tbxOfIntervals[l_IdxGrp], l_IdxGrp);
+                    l_matrixMixerData[e_matrixMixerHeaders.channelGroupe].push(l_fctDrawChannelGroups);
+                    l_channelsGroups.appendChild(l_fctDrawChannelGroups);
+
+                    // Création d'une div pour rassembler les noms des canaux pour pouvoir les mettre en lignes ou en colonnes
+                    let l_channelsNames = document.createElement("div");
+                    l_channelsNames.classList.add(`divForAll${p_source ? "Col" : "Row"}ChannelsNames`);
+                    l_fctDrawChannelGroups.appendChild(l_channelsNames);
+
+                    for (let l_idxChannel = l_IdxGrp * this.m_ChannelGroupeRange; l_idxChannel < ((l_IdxGrp + 1) * this.m_ChannelGroupeRange); l_idxChannel++) {
+                        // Création des noms de canaux
+                        let l_fctDrawChannelName = this.fctDrawChannelName(p_source, l_idxChannel);
+                        l_matrixMixerData[e_matrixMixerHeaders.channelName].push(l_fctDrawChannelName);
+                        l_channelsNames.appendChild(l_fctDrawChannelName);
+
+                        //Création des cellules par ligne
+                        if (!p_source) {
+                            for (let l_idxCol = 0; l_idxCol < this.m_nbCols; l_idxCol++) {
+                                let l_cell = this.fctDrawCell(l_idxCol, l_idxChannel);
+                                l_fctDrawChannelName.appendChild(l_cell);
+                                this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells].push(l_cell);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        this.m_matrixMixer.appendChild(l_divHeaderContainer);
     }
 
-    //Insert Data on m_matrixMixerData
-    createMixerContext(p_container , p_source){
-        try {
-            //Restructuration du tableau pour utilisation dans le DOM
-            let l_matrixMixerData = this.m_matrixMixerData[p_source ? e_matrixMixerComponents.AudioSources : e_matrixMixerComponents.AudioReceiver];
+    fctDrawHeaderContainer(p_source, p_cardIdx) {
+        // Main div
+        let l_cardNameElement = document.createElement("div");
+        l_cardNameElement.classList.add(`${p_source?"col":"row"}CardName${p_cardIdx}`);
+        // Title Div
+        let l_cardTitleElement = document.createElement("div");
+        l_cardTitleElement.classList.add(`${p_source?"col":"row"}CardTitle`);
+        l_cardTitleElement.textContent = p_cardIdx +1;
 
-            // Get card name
-            let l_cardAlias = g_Gui.getDevice().getAlias();
+        l_cardNameElement.appendChild(l_cardTitleElement)
+        return l_cardNameElement ;
+    }
 
-            // Nb of chan
-            let l_nbChannels = p_source ? this.m_cols : this.m_rows;
+    fctDrawChannelGroups(p_source, p_cardIdx , p_intervalsNames, p_idxInterval){
+        // Main div
+        let l_groupNameElement = document.createElement("div");
+        l_groupNameElement.classList.add(`${p_source?"col":"row"}ChannelGroups`);
+        // Title Div
+        let  l_groupTitleElement  = document.createElement("div");
+        l_groupTitleElement.classList.add(`${p_source?"col":"row"}ChannelGroupsTitle`);
+        l_groupTitleElement.classList.add(`crossWidth`);
+        l_groupTitleElement.textContent = p_intervalsNames;
+        l_groupTitleElement.appendChild(this.createMinusPlusBtn(p_cardIdx , p_source , p_idxInterval));
 
-            // Name of intervals
-            let l_namesOfIntervals = this.getIntervals(l_nbChannels,this.m_ChannelGroupeRange)
-            let l_intervalsIndex = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelResume].map((num) => num)
+        l_groupNameElement.appendChild(l_groupTitleElement);
+        return l_groupNameElement;
+    }
 
+    fctDrawChannelName(p_source, p_channelIdx){
+        // Main div
+        let l_channelElement = document.createElement("div");
+        l_channelElement.classList.add(`${p_source ?"col":"row"}ChannelName`);
+        l_channelElement.classList.add(`cross${p_source?"Width":"Height"}`);
 
-            // Parcours des machines pour les columnHeadersGeneral
-            for (let l_idxOfMachine = 0; l_idxOfMachine < l_nbChannels; l_idxOfMachine++) {
-                let l_fctDrawGeneralHeaderContainer = p_source ? this.createColumnHeadersContainer(0) : this.createRowHeadersContainer(0);
-                let l_fctDrawHeaderContainer = p_source ? this.createColHeader1() : this.createRowHeader1();
+        // Title Div (e_channelNameContent.alias = 0)
+        let l_channelTitleElement = document.createElement("div")
+        l_channelTitleElement.classList.add(`${p_source?"col":"row"}ChannelNameTitle`);
+        l_channelTitleElement.classList.add(`crossWidth`);
+        l_channelTitleElement.textContent = `${p_source?"Input":"Output"} ${p_channelIdx+1}` ;
+        l_channelElement.appendChild(l_channelTitleElement);
 
-                if (!l_matrixMixerData[e_matrixMixerHeaders.cardMachine].includes(l_fctDrawGeneralHeaderContainer)) {
-                    l_matrixMixerData[e_matrixMixerHeaders.cardMachine][l_idxOfMachine].push(l_fctDrawGeneralHeaderContainer);
+        // Vu meters (e_channelNameContent.vuMeter = 1)
+        let l_channelVuMeter = this.fctDrawChannelVuMeter(p_source);
+
+        l_channelElement.appendChild(l_channelTitleElement);
+        l_channelElement.appendChild(l_channelVuMeter);
+
+        return l_channelElement;
+    }
+
+    fctDrawChannelVuMeter(p_source) {
+        //Création du vuMeter en canvas
+        let l_vuMeterCanvas = document.createElement("canvas");
+        l_vuMeterCanvas.classList.add(`${p_source ? "col" : "row"}VuMeterMatrixMixerCanvas`);
+        let l_VuMeterContext = l_vuMeterCanvas.getContext("2d");
+        let l_gradient = l_VuMeterContext.createLinearGradient(0, 0, 20, 20);
+        l_gradient.addColorStop(1, "red");
+        l_gradient.addColorStop(0.6, "yellow");
+        l_gradient.addColorStop(0.3, "yellow");
+        l_gradient.addColorStop(0, "green");
+        l_VuMeterContext.fillStyle = l_gradient;
+
+        //Ouverture des configurations au click sur le vuMeter
+        // l_vuMeterCanvas.addEventListener('mousedown', function () {
+        //     if (g_Gui.getConfigWindows()) {
+        //         openConfigWindow();
+        //         g_Gui.getConfigWindows().openConfigByName(GUI_SPECIFIC_TEMPLATE_IHM);
+        //     }
+        // });
+
+        return l_vuMeterCanvas;
+    }
+
+    fctDrawCell(p_colsIdx, p_rowsIdx){
+        //Création des cellules
+        let l_cells = document.createElement("div");
+        l_cells.classList.add( "cell");
+        l_cells.setAttribute('data-row', `${p_rowsIdx + 1}` );
+        l_cells.setAttribute('data-col', `${p_colsIdx + 1}`);
+        l_cells.classList.add(`crossWidth`);    //20px
+        l_cells.classList.add(`crossHeight`);   //20px
+        // // Debug
+        // if ( p_colsIdx === p_rowsIdx ){
+        //     l_cells.innerHTML = `${(p_colsIdx/this.m_ChannelGroupeRange)}`;
+        // }
+        return l_cells;
+    }
+
+    //Toggle Minus Plus Button
+    createMinusPlusBtn(p_source, p_cardIdx, p_idxInterval) {
+        const l_btn = document.createElement("button");
+        l_btn.textContent = "-";
+        l_btn.classList.add(`minus-btn`);
+        l_btn.classList.add(`crossWidth`);
+        l_btn.classList.add(`crossHeight`);
+        l_btn.addEventListener('mousedown', () => { this.OnMouseDownMinusButton(p_cardIdx, p_source, p_idxInterval); });
+        return l_btn;
+    }
+
+    OnMouseDownMinusButton(p_source, p_cardIdx, p_idxInterval ){
+        // On met à display none toutes les colonnes ou lignes selon la source.
+        let l_matrixHeaderCtx = p_source ? this.m_matrixMixerData[e_matrixMixerComponents.AudioSources] : this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver] ;
+        // On laisse visible le premier pour la vue 'resume'
+        let l_startChannel = p_idxInterval * this.m_ChannelGroupeRange ;
+        let l_lastChannel = l_startChannel + this.m_ChannelGroupeRange ;
+        let l_isResume = l_matrixHeaderCtx[e_matrixMixerHeaders.channelName][l_startChannel+1].style.display === "" ;
+
+        // Mise à jour div channelName
+        // l_matrixHeaderCtx[e_matrixMixerHeaders.channelName][l_startChannel].innerHTML = l_isResume ? (l_startChannel+1)+"-"+(l_lastChannel) : (l_startChannel+1) ;
+        for ( let l_idxChannelName =  l_startChannel +1 ; l_idxChannelName < l_lastChannel ; l_idxChannelName++ ){
+            l_matrixHeaderCtx[e_matrixMixerHeaders.channelName][l_idxChannelName].style.display = l_isResume ? "none" : "" ;
+        }
+
+        if (p_source) {
+            // Calcul du nombre de lignes à masquer
+            let l_nbCell = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells].length;
+            // Calcul du nombre de cellules par ligne
+            let l_nbCols = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName].length;
+            let l_startCell = 0 ;
+            let l_lastCell = 0 ;
+            for ( let l_idxRow = 0 ; l_idxRow < l_nbCell ; l_idxRow++){
+                // Calcul la premiere cellule à masquer et la dernière
+                if ( l_idxRow % l_nbCols === 0 ) {
+                    l_startCell = (l_startChannel) + ( l_nbCols * (l_idxRow / l_nbCols));
+                    l_lastCell = l_startCell + this.m_ChannelGroupeRange;
                 }
-                if (!l_matrixMixerData[e_matrixMixerHeaders.cardName].includes(l_fctDrawHeaderContainer)) {
-                    l_matrixMixerData[e_matrixMixerHeaders.cardName][l_idxOfMachine].push(l_fctDrawHeaderContainer);
+                if ( l_idxRow > l_startCell && l_idxRow < l_lastCell ){
+                    this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][l_idxRow].style.display = l_isResume ? "none" : "" ;
                 }
             }
-
-            // Parcours des canaux source audio pour les groupes et les channels resume, et les channels
-            for (let l_idxChannel = 0; l_idxChannel < l_nbChannels; l_idxChannel++) {
-                let l_cardName = l_matrixMixerData[e_matrixMixerHeaders.cardName][l_idxChannel]
-
-                let l_fctDrawChannelGroupes = p_source ? this.createColHeader2(l_namesOfIntervals) : this.createRowHeader2(l_namesOfIntervals);
-                let l_fctDrawChannelNames= p_source ? this.createColHeader3(l_cardName) : this.createRowHeader3(l_cardName);
-                let l_fctDrawChannelResume = p_source ? this.createHideColHeader3(l_idxChannel,l_intervalsIndex) : this.createHideRowHeader3(l_nbChannels,l_intervalsIndex);
-
-                // Ajouter le nom du canal uniquement si nécessaire
-                if (!l_matrixMixerData[e_matrixMixerHeaders.channelName].includes(l_fctDrawChannelNames)) {
-                    l_matrixMixerData[e_matrixMixerHeaders.channelName].push(l_fctDrawChannelNames);				}
-
-                if (l_idxChannel % this.m_ChannelGroupeRange === 0) {
-                    // Création des channelGroupes
-                    if (!l_matrixMixerData[e_matrixMixerHeaders.channelGroupe].includes(l_fctDrawChannelGroupes)) {
-                        l_matrixMixerData[e_matrixMixerHeaders.channelGroupe].push(l_fctDrawChannelGroupes);
-                    }
-                    // Création des colonnes de résumé
-                    if (!l_matrixMixerData[e_matrixMixerHeaders.channelResume].includes(l_fctDrawChannelResume)) {
-                        l_matrixMixerData[e_matrixMixerHeaders.channelResume].push(l_fctDrawChannelResume);
-                    }
-                }
-
-            }
-
-            console.log(this.m_matrixMixerData)
-
-            this.createGrid(p_source, l_matrixMixerData);
-        } catch (error) {
-            console.error(`Erreur lors de l'insertion de donnée dans le tableau m_matrixMixerData : ${error}`);
         }
     }
 
-    getExpansionLevel() {
-        return this.m_expansionLevel;
-    }
-
-    getIntervals(numItems, intervalSize) {
+    getIntervals(p_nbChannels, p_channelGroupeRange) {
+        //Création des intervals
         let l_intervals = [];
-        for (let i = 0; i < numItems; i += intervalSize) {
-            let start = i + 1;
-            let end = Math.min(i + intervalSize, numItems);
-            l_intervals.push(`${start}-${end}`);
+        for (let l_idxIntervalNumber = 0; l_idxIntervalNumber < p_nbChannels; l_idxIntervalNumber += p_channelGroupeRange) {
+            let start = l_idxIntervalNumber + 1;
+            let end = Math.min(l_idxIntervalNumber + p_channelGroupeRange, p_nbChannels);
+            l_intervals.push(`${start} - ${end}`);
         }
         return l_intervals;
     }
 
-    getNbOfMachineCols(){
-        this.m_nbofMachineCols = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.cardName].length + 1 ;
-        return this.m_nbofMachineCols;
-    }
-
-    getNbOfMachineRows(){
-        this.m_nbofMachineRows = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.cardName].length + 1 ;
-        return this.m_nbofMachineRows;
-    }
-
-    updateGridDimensionsCSS() {
-        this.getNbOfMachineCols();
-        this.getNbOfMachineRows();
-        this.m_matrixMixer.style.setProperty('--cellSize', `${this.m_cellSize}px`);
-        this.m_matrixMixer.style.setProperty('--cols', `${this.m_cols}`);
-        this.m_matrixMixer.style.setProperty('--rows', `${this.m_rows}`);
-        this.m_matrixMixer.style.setProperty('--cols-length', `${this.m_nbofMachineCols}`);
-        this.m_matrixMixer.style.setProperty('--rows-length', `${this.m_nbofMachineRows}`);
-    }
-
-    // ColumnHeaders Container
-    createColumnHeaders() {
-        return {
-            tag : 'div',
-            class : 'columnsContainer'
-        }
-    }
-
-    createColumnHeadersContainer(p_colContainerIndex){
-        return {
-            tag : 'div',
-            class : `columnHeaders${p_colContainerIndex + 1}`,
-            innerHTML : ''
-        }
-    }
-
-    createColHeader1() {
-        return {
-            tag : 'div',
-            class : ['headers', 'colHeader1'],
-            innerHTML : ''
-        }
-    }
-
-    createColHeader2(p_colInterval){
-        return {
-            tag : 'div',
-            class : ['headers', 'colHeader2'],
-            children: [
-                {
-                    tag: 'div',
-                    class : ['colHeader2Content'],
-                    textContent: `${p_colInterval}`
-                }
-            ],
-            addMinusPlusBtn: true
-        }
-    }
-
-    createColHeader3(p_colName){
-        return {
-            tag : 'div',
-            class : ['headers', 'colHeader3'],
-            children: [
-                {
-                    tag: 'div',
-                    class : ['colHeader3Content'],
-                    textContent: `${p_colName}`
-                }
-            ]
-        }
-    }
-
-    createHideColHeader3(p_colIndex, p_colIntervalIndex){
-        return {
-            tag : 'div',
-            class : ['headers', 'colHideHeader3','hidden'],
-            children: [
-                {
-                    tag: 'div',
-                    class : ['colHeader3Content'],
-                    textContent: `${p_colIndex}`,
-                    attributes : {
-                        'data-col-interval-index': `${p_colIntervalIndex}`
-                    }
-                }
-            ]
-        }
-    }
-
-    // RowHeaders Container
-    createRowHeaders() {
-        return {
-            tag : 'div',
-            class : 'rowsContainer'
-        }
-    }
-
-    createRowHeadersContainer(p_rowContainerIndex){
-        return {
-            tag: 'div',
-            class : `rowHeaders${p_rowContainerIndex + 1}`,
-            innerHTML : ''
-        }
-    }
-
-    createRowHeader1(){
-        return {
-            tag : 'div',
-            class : ['headers', 'rowHeader1'],
-            innerHTML : ''
-        }
-    }
-
-    createRowHeader2(p_rowInterval){
-        return {
-            tag : 'div',
-            class : ['headers', 'rowHeader2'],
-            innerText : `${p_rowInterval}`,
-            addMinusPlusBtn: true
-        }
-    }
-
-    createRowHeader3(p_rowName) {
-        return {
-            tag : 'div',
-            class : ['headers', 'rowHeader3'],
-            innerText : `${p_rowName}`
-        }
-    }
-
-    createHideRowHeader3(p_rowIndex, p_rowIntervalIndex){
-        return {
-            tag : 'div',
-            class : ['headers', 'hideRowHeader3', 'hidden'],
-            innerText : `${p_rowIndex}`,
-            attributes : {
-                'data-row-interval-index': `${p_rowIntervalIndex}`
-            }
-        }
-    }
-
-    // CellContainer
-    createCells() {
-        return {
-            tag : 'div',
-            class : 'cellsContainer'
-        }
-    }
-
-    createCellsContainer(){
-        return {
-            tag : 'div',
-            class : 'gridCellContainer'
-        }
-    }
-
-    createCellElement(rowIndex,colIndex,colIntervalIndex,rowIntervalIndex,cellValue){
-        return {
-            tag: 'div',
-            class: 'cell',
-            attributes: {
-                'data-row': `${rowIndex + 1}`,
-                'data-col': `${colIndex + 1}`,
-                'data-col-interval-index': `${colIntervalIndex}`,
-                'data-row-interval-index': `${rowIntervalIndex}`
-            },
-            innerText: `${cellValue}`,
-            eventListener: {
-                type: 'click',
-                handler: this.handleMouseClick.bind(this)
-            }
-        }
-    }
-
-    // EmptyContainer
-    createEmptyContainer() {
-        let l_emptyContainer = document.createElement("div");
-        l_emptyContainer.classList.add("emptyContainer", "headers");
-        l_emptyContainer.innerText = "New Grid";
-        return l_emptyContainer
-    }
-
-    //CreateElementFromObject
-    createElementFromObject(obj) {
-        const element = document.createElement(obj.tag);
-
-        // Ajouter les classes
-        if (Array.isArray(obj.class)) {
-            obj.class.forEach(cls => element.classList.add(cls));
-        } else if (obj.class) {
-            element.classList.add(obj.class);
-        }
-
-        // Ajouter le contenu texte ou HTML
-        if (obj.innerText) {
-            element.innerText = obj.innerText;
-        }
-        if (obj.innerHTML) {
-            element.innerHTML = obj.innerHTML;
-        }
-
-        // Ajouter des attributs si définis
-        if (obj.attributes) {
-            for (const [key, value] of Object.entries(obj.attributes)) {
-                element.setAttribute(key, value);
-            }
-        }
-
-        // Ajouter des enfants (si présents)
-        if (obj.children) {
-            obj.children.forEach(childObj => {
-                const childElement = this.createElementFromObject(childObj);
-                element.appendChild(childElement);
-            });
-        }
-
-        // Ajouter un listener d'événement (si défini)
-        if (obj.eventListener) {
-            element.addEventListener(obj.eventListener.type, obj.eventListener.handler);
-        }
-
-        // Ajouter le bouton Minus/Plus si nécessaire
-        if (obj.addMinusPlusBtn) {
-            this.addMinusPlusBtn(element);
-        }
-
-        return element;
-    }
-
-    //Grid on DOM
-    createGrid(p_source, p_matrixMixerData) {
-        try {
-            // const fragment = document.createDocumentFragment();
-            // // Containers
-            // let l_divHeaderContainer = p_source ? this.createColumnHeadersContainer(0) : this.createRowHeadersContainer(0);
-            //
-            // // Création
-            // l_divHeaderContainer.appendChild(p_matrixMixerData[e_matrixMixerHeaders.cardName]);
-            //
-            // // Ajout des div groupe dans l'ordre : Container AudioSources
-            // for (let l_idxGroupe = 0; l_idxGroupe < p_matrixMixerData[e_matrixMixerHeaders.channelGroupe].length; l_idxGroupe++) {
-            // 	l_divHeaderContainer.appendChild(this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelGroupe][l_idxGroupe]);
-            // }
-            //
-            // // Ajout des canaux dans l'ordre : container
-            // for (let l_idxChannel = 0; l_idxChannel < this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName].length; l_idxChannel++) {
-            // 	l_divHeaderContainer.appendChild(this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName][l_idxChannel]);
-            // 	if (l_idxChannel % this.m_ChannelGroupeRange === 0) {
-            // 		// Ajout des div resume
-            // 		l_divHeaderContainer.appendChild(this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelResume][l_idxChannel]);
-            // 	}
-            // }
-            //
-            // // Ajout des div groupe dans l'ordre : Container AudioReceiver
-            // for (let l_idxGroupe = 0; l_idxGroupe < p_matrixMixerData[e_matrixMixerHeaders.channelGroupe].length; l_idxGroupe++) {
-            // 	l_divHeaderContainer.appendChild(this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelGroupe][l_idxGroupe]);
-            // }
-            //
-            // // Ajout des canaux dans l'ordre : container AudioReceiver
-            // for (let l_idxChannel = 0; l_idxChannel < this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName].length; l_idxChannel++) {
-            // 	l_divHeaderContainer.appendChild(this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName][l_idxChannel]);
-            // 	if (l_idxChannel % this.m_ChannelGroupeRange === 0) {
-            // 		// Ajout des div resume
-            // 		l_divHeaderContainer.appendChild(this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelResume][l_idxChannel]);
-            // 	}
-            // }
-            //
-            // let divCellContainer = document.createElement("div");
-            // divCellContainer.classList.add("cellsContainer")
-
-            this.m_matrixMixer.innerHTML = "";
-            // Buttons Container
-            this.addExpandCollapseButtons();
-            // Grid Container
-            this.l_MatrixContainer = document.createElement("div");
-            this.l_MatrixContainer.classList.add("matrixContainer");
-            this.m_matrixMixer.appendChild(this.l_MatrixContainer);
-
-            // Empty Container
-            this.createEmptyContainer();
-
-            // Column Headers
-            this.createColumnHeaders();
-
-            // Row Headers
-            this.createRowHeaders();
-
-            // Grid Cells
-            this.createCells();
-
-        } catch (error) {
-            console.error(`Erreur lors de l'exécution de createGrid : ${error}`);
-        }
-    }
-
-
-    //EventListener
+    //EventListeners
     addEventListeners() {
-        this.m_matrixMixer.addEventListener("mousedown", (p_event) => this.handleMouseDown(p_event));
-        this.m_matrixMixer.addEventListener("mouseup", (p_event) => this.handleMouseUp(p_event));
-        this.m_matrixMixer.addEventListener("mousemove", (p_event) => this.handleMouseMove(p_event));
-        this.m_matrixMixer.addEventListener("dblclick", (p_event) => this.handleDoubleClick(p_event));
-        this.m_matrixMixer.addEventListener("mouseleave", (p_event) => this.handleMouseLeave(p_event));
-        window.addEventListener("keydown", (p_event) => this.handleSpaceKeydown(p_event))
-        window.addEventListener("keyup", (p_event) => this.handleSpaceKeyup(p_event))
-    }
-
-    handleMouseClick(p_event) {
-        p_event.preventDefault();
-    }
-
-    handleDoubleClick(p_event) {
-        const l_cell = p_event.target;
-        if (l_cell.classList.contains("cell") && !l_cell.classList.contains("header")) {
-            const l_row = parseInt(l_cell.getAttribute('data-row'));
-            const l_col = parseInt(l_cell.getAttribute('data-col'));
-            this.showInputBox(l_row, l_col, l_cell);
-        }
-    }
-
-    handleMouseDown(p_event) {
-        if (this.m_isSpacePressed) {
-            this.m_isDragging = true;
-            this.startX = p_event.pageX - this.m_matrixMixer.scrollLeft;
-            this.startY = p_event.pageY - this.m_matrixMixer.scrollTop;
-            this.scrollLeft = this.m_matrixMixer.scrollLeft;
-            this.scrollTop = this.m_matrixMixer.scrollTop;
-            this.m_matrixMixer.style.cursor = 'grabbing'; // Changement du curseur
-        }
-    }
-
-    handleMouseMove(p_event) {
-        const l_cell = p_event.target;
-        if (l_cell.classList.contains("cell")) {
-            const l_row = parseInt(l_cell.getAttribute('data-row'));
-            const l_col = parseInt(l_cell.getAttribute('data-col'));
-            this.crossHair(l_row, l_col);
-            this.gridInfos(l_row, l_col, l_cell);
-        } else {
-            this.clearCrossHair();
-            this.hideGridInfos();
-        }
-        if (this.m_isDragging) {
-            const x = p_event.pageX - this.m_matrixMixer.scrollLeft;
-            const y = p_event.pageY - this.m_matrixMixer.scrollTop;
-            const walkX = x - this.startX;
-            const walkY = y - this.startY;
-            this.m_matrixMixer.scrollLeft = this.scrollLeft - walkX;
-            this.m_matrixMixer.scrollTop = this.scrollTop - walkY;
-        }
-    }
-
-    handleMouseUp() {
-        if (this.m_isSelecting) {
-            this.m_isSelecting = false;
-        }
-        this.m_isDragging = false;
-        this.m_matrixMixer.style.cursor = 'grab';
-    }
-
-    handleMouseLeave(p_event) {
-        const l_cell = p_event.target;
-        if (l_cell.classList.contains("cell")) {
-            const l_row = parseInt(l_cell.getAttribute('data-row'));
-            const l_col = parseInt(l_cell.getAttribute('data-col'));
-            this.showInputBox(l_row, l_col, l_cell);
-        }
-        this.m_isDragging = false;
-    }
-
-    handleSpaceKeydown(p_event) {
-        if (p_event.code === 'Space' && !this.m_isSpacePressed) {
+        // Click sur tout le document possible pour effacer l'input box
+        document.addEventListener("click", p_event => {
             p_event.preventDefault();
-            this.m_isSpacePressed = true;
-            this.m_matrixMixer.style.cursor = 'grab';
-            p_event.preventDefault();
-        }
+            this.clearInputBox();
+        });
+
+        // Click en dehors de la fenêtre pour effacer l'input box
+        window.addEventListener("blur", () => {
+            this.clearInputBox();
+        });
+
+        // Déplacement de la souris sur les cellules pour afficher le surlignage et les gridInfos
+        document.addEventListener("mousemove", p_event => {
+            const l_cell = p_event.target;
+            if (l_cell.classList.contains("cell")) {
+                this.highlightAndGridInfos(l_cell);
+            } else {
+                this.clearCrossHair();
+                this.clearGridInfos();
+            }
+        });
+
+        // Double clic sur les cellules pour afficher l'input box
+        this.m_matrixMixer.querySelectorAll(".cell").forEach((cell, p_cellIdx) => {
+            cell.addEventListener("dblclick", p_event => {
+                p_event.preventDefault();
+                this.showInputBox(p_event, p_cellIdx);
+            });
+        });
     }
 
-    handleSpaceKeyup(p_event) {
-        if (p_event.code === 'Space') {
-            this.m_isSpacePressed = false;
-            this.m_matrixMixer.style.cursor = '';
-            this.m_isDragging = false;
-        }
-    }
-
-    //CrossHair
-    crossHair(p_row, p_col) {
+    //Surlignage & GridInfos
+    highlightAndGridInfos(p_cell) {
+        // Si inputBox présent : ne rien faire
+        if (document.querySelector(".inputBox")) return;
         this.clearCrossHair();
-        // const l_gridCell = this.m_matrixMixer.querySelectorAll(".cell");
-        let l_gridCell = this.m_matrixMixerData.cells;
 
-        l_gridCell.forEach((row, rowIndex) => {
-                row.forEach((cell, colIndex) => {
-                    console.log(cell);
-                    if(rowIndex === p_row || colIndex === p_col) {
-                        cell.classList.add("highlight");
-                    }
-                    if(rowIndex === p_row && colIndex === p_col){
-                        cell.classList.add("hovered");
-                    }
-                })
+        // Récupération des indices de ligne et de colonne de la cellule
+        const p_row = parseInt(p_cell.getAttribute('data-row'));
+        const p_col = parseInt(p_cell.getAttribute('data-col'));
+        const l_nbCell = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells].length;
+        const l_nbCols = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName].length;
+        let colIdx = 0;
+        let rowIdx = 0;
+
+        // Parcours des lignes
+        for (let l_idxRow = 0; l_idxRow < l_nbCell; l_idxRow++) {
+            colIdx = l_idxRow % l_nbCols;
+            rowIdx = Math.floor(l_idxRow / l_nbCols);
+
+            // Surligner la colonne correspondante
+            if (colIdx === p_col - 1) {
+                this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][l_idxRow].classList.add('highlight');
+                this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName][colIdx].classList.add('highlight');
             }
-        );
 
-        // Ajouter la classe highlight aux en-têtes de ligne et de colonne correspondants
-        const rowHeaders3 = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName]
-        const colHeaders3 = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName]
-
-        rowHeaders3.forEach((header) => {
-            const headerRow = parseInt(header.textContent);
-            if (headerRow === p_row) {
-                header.style.backgroundColor = "#FFFFFF21";
+            // Surligner la ligne correspondante
+            if (rowIdx === p_row - 1) {
+                this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][l_idxRow].classList.add('highlight');
+                this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName][rowIdx].classList.add('highlight');
             }
-        });
 
-        colHeaders3.forEach((header) => {
-            const headerCol = parseInt(header.textContent);
-            if (headerCol === p_col) {
-                header.style.backgroundColor = "#FFFFFF21";
+            // Afficher les informations de la grille pour la cellule correspondante
+            if (colIdx === p_col - 1 && rowIdx === p_row - 1) {
+                this.m_matrixMixer.appendChild(this.drawGridInfos(p_col, p_row, p_cell));
             }
-        });
+        }
     }
 
-    clearCrossHair() {
-        const l_gridCell = this.m_matrixMixer.querySelectorAll(".cell");
-        const rowHeaders3 = this.m_matrixMixer.querySelectorAll(".rowHeader3");
-        const colHeaders3 = this.m_matrixMixer.querySelectorAll(".colHeader3");
-
-        l_gridCell.forEach((p_cell) => {
-            p_cell.classList.remove("highlight");
-            p_cell.classList.remove("hovered");
-        });
-
-        rowHeaders3.forEach((header) => {
-            header.style.backgroundColor = "#444";
-        });
-
-        colHeaders3.forEach((header) => {
-            header.style.backgroundColor = "#444";
-        });
-
-    }
-
-    gridInfos(p_row, p_col, p_cell) {
-        let l_gridInfos = this.getOrCreateGridInfos();
-
-        // Masquer temporairement pour repositionner
-        l_gridInfos.style.display = "none";
-        const l_rect = p_cell.getBoundingClientRect();
-        const l_gridInfosOffset = 10;
-        const l_mixerNumber = p_cell.getAttribute('data-col') || '';
-        const l_outputNumber = p_cell.getAttribute('data-row') || '';
-
-        // Mise à jour du contenu
-        this.updateGridInfosContent(l_gridInfos, l_mixerNumber, l_outputNumber);
-
-        // Calcul de la position et du décalage
-        const mixerNumberLength = l_mixerNumber.length;
-        const additionalOffset = this.calculateOffset(mixerNumberLength);
-
-        this.positionGridInfos(l_gridInfos, l_rect, l_gridInfosOffset, additionalOffset);
-
-        // Masquer les informations si au bord
-        this.adjustVisibility(l_gridInfos, l_rect, l_gridInfosOffset, additionalOffset);
-
-        // Afficher le div gridInfos
-        l_gridInfos.style.display = "block";
-    }
-
-    getOrCreateGridInfos() {
+    drawGridInfos(p_col, p_row, p_cell) {
+        // Récupérer ou créer l'élément gridInfos
         let l_gridInfos = document.getElementById("gridInfos");
 
         if (!l_gridInfos) {
             l_gridInfos = document.createElement("div");
             l_gridInfos.id = "gridInfos";
             l_gridInfos.style.position = "absolute";
-            this.m_matrixMixer.appendChild(l_gridInfos);
         }
+
+        // Calcul de la position de l'élément gridInfos
+        const l_rect = p_cell.getBoundingClientRect();
+        const offset = 10;
+        const additionalOffset = (p_col.toString().length - 1) * 2;
+        l_gridInfos.style.left = `${l_rect.left + window.scrollX + offset - additionalOffset}px`;
+        l_gridInfos.style.top = `${l_rect.top + window.scrollY + offset}px`;
+
+        // Récupération des titres des colonnes et des lignes
+        const colTitle = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName][p_col - 1].childNodes[e_channelNameContent.alias].textContent;
+        const rowTitle = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName][p_row - 1].childNodes[e_channelNameContent.alias].textContent;
+        l_gridInfos.innerHTML = `
+        <div class="mixerGridInfos">${colTitle}</div>
+        <div class="outputGridInfos">${rowTitle}</div>
+    `;
+
+        // Vérifier si l'élément est trop proche du bord supérieur ou gauche
+        const isTooCloseToTop = l_rect.top < (20 * 19) + offset + additionalOffset; // 20px * 19 = 380px   //20px = taille de la cellule
+        const isTooCloseToLeft = l_rect.left < (20 * 15) + offset + additionalOffset; // 20px * 15 = 300px   //20px = taille de la cellule
+
+        // Masquer les informations si c'est trop proche du bord
+        l_gridInfos.querySelector('.mixerGridInfos').style.display = isTooCloseToTop ? "none" : "block";
+        l_gridInfos.querySelector('.outputGridInfos').style.display = isTooCloseToLeft ? "none" : "block";
+
         return l_gridInfos;
     }
 
-    updateGridInfosContent(l_gridInfos, mixerNumber, outputNumber) {
-        l_gridInfos.innerHTML = `
-        <div class="mixerGridInfos">Mixer ${mixerNumber}</div>
-        <div class="outputGridInfos">Output ${outputNumber}</div>
-    `;
+    clearCrossHair() {
+        const l_gridCells = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells];
+        const l_rowChannelName = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName];
+        const l_colChannelName = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName];
+
+        l_gridCells.forEach(cell => cell.classList.remove('highlight'));
+        l_rowChannelName.forEach(header => header.classList.remove('highlight'));
+        l_colChannelName.forEach(header => header.classList.remove('highlight'));
     }
 
-    calculateOffset(mixerNumberLength) {
-        return (mixerNumberLength - 1) * 5;
-    }
-
-    positionGridInfos(l_gridInfos, l_rect, l_gridInfosOffset, additionalOffset) {
-        l_gridInfos.style.left = `${l_rect.left + window.scrollX - (this.m_cellSize * 4) - l_gridInfosOffset - additionalOffset}px`;
-        l_gridInfos.style.top = `${l_rect.top + window.scrollY - (this.m_cellSize * 3) + l_gridInfosOffset}px`;
-    }
-
-    adjustVisibility(l_gridInfos, l_rect, l_gridInfosOffset, additionalOffset) {
-        const isTooCloseToTop = l_rect.top < (this.m_cellSize * 9) + l_gridInfosOffset;
-        const isTooCloseToLeft = l_rect.left < (this.m_cellSize * 7) + l_gridInfosOffset + additionalOffset;
-
-        const mixerInfo = l_gridInfos.querySelector('.mixerGridInfos');
-        const outputInfo = l_gridInfos.querySelector('.outputGridInfos');
-
-        if (isTooCloseToTop) mixerInfo.style.display = 'none';
-        if (isTooCloseToLeft) outputInfo.style.display = 'none';
-    }
-
-    hideGridInfos() {
+    clearGridInfos() {
         const l_gridInfos = document.getElementById("gridInfos");
         if (l_gridInfos) {
-            l_gridInfos.style.display = "none";
+            l_gridInfos.remove();
         }
     }
 
     //InputBox
-    showInputBox(p_row, p_col, p_cell) {
-        const l_input = document.createElement("input");
-        l_input.classList.add("inputBox");
-        l_input.type = "number";
-        l_input.value = this.m_matrixMixerData.cells[`${p_row - 1}`][`${p_col - 1}`];
+    showInputBox(p_event, p_cellIdx) {
+        // Récupération de la cellule
+        const l_cell = p_event.target;
 
-        p_cell.innerHTML = "";
-        p_cell.appendChild(l_input);
-        l_input.focus();
+        // Création de l'input box
+        const l_inputBox = document.createElement("input");
+        l_inputBox.classList.add("inputBox", "crossWidth", "crossHeight");
+        // l_inputBox.type = "number";
 
-        const updateCell = () => {
-            const newValue = l_input.value;
-            if (newValue !== "") {
-                this.m_matrixMixerData.cells[`${p_row - 1}`][`${p_col - 1}`] = newValue;
+
+        // Positionnement de l'input box
+        const rect = l_cell.getBoundingClientRect();
+        l_inputBox.style.left = `${rect.left + window.scrollX - 2}px`;
+        l_inputBox.style.top = `${rect.top + window.scrollY - 2}px`;
+
+        //Gestion des évènements
+        this.inputBoxKeyDown(l_cell, p_cellIdx, l_inputBox);
+
+        // Ajout de l'input box au DOM et focus
+        this.m_matrixMixer.appendChild(l_inputBox);
+        l_inputBox.focus();
+    }
+
+    inputBoxKeyDown(p_cell, p_cellIndex, p_inputBox) {
+        const l_mixerIdx = Math.floor(p_cellIndex / this.m_nbCols);
+        const l_minGain = this.getMixerMatrixGainMin(p_cellIndex);
+        const l_maxGain = this.getMixerMatrixGainMax(p_cellIndex);
+        const l_audioWay = this.m_AudioWay
+        let l_mute = true;
+
+        //Gestion des évènements
+        p_inputBox.addEventListener("keydown", (p_event) => {
+            let l_value = parseFloat(p_inputBox.value);
+            let l_keyboardValue = p_event.key;
+
+            switch (l_keyboardValue) {
+                case "Enter":
+                    //Saisie la valeur dans la cellule si elle est valide
+                    if (p_inputBox.value.trim() === "") {
+                        p_cell.textContent = "";
+                        p_cell.style.backgroundColor = "";
+                        this.stopVuMeterAnimation(p_cellIndex);
+                        this.clearInputBox();
+                    } else if (l_value >= l_minGain && l_value <= l_maxGain) {
+                        l_mute = false;
+                        // this.refreshModelFromMixerValue(l_audioWay, l_mixerIdx, p_cellIndex, l_value, l_mute);
+                        this.drawNewValueOnGrid(p_cellIndex, l_value);
+                        this.clearInputBox();
+                    } else {
+                        alert(`La valeur doit être entre ${l_minGain} et ${l_maxGain}`);
+                        p_inputBox.focus();
+                    }
+                    break;
+                //Todo :  à revoir
+                case "Tab":
+                    p_event.preventDefault();
+                    p_event.stopImmediatePropagation();
+                    // Saisie la valeur dans la cellule
+                    // this.refreshModelFromMixerValue(l_audioWay, l_mixerIdx, p_cellIndex, l_value, l_mute);
+                    this.drawNewValueOnGrid(p_cellIndex, l_value);
+                    // Efface l'input box
+                    this.clearInputBox();
+                    // Passe à la cellule suivante
+                    // this.selectNextCell(p_cellIndex);
+                    break;
+                case "Escape":
+                    // Efface et annule la saisie
+                    this.clearInputBox();
+                    break;
+                case "Backspace":
+                case "ArrowLeft":
+                case "ArrowRight":
+                case "ArrowUp":
+                case "ArrowDown":
+                case "Delete":
+                    break;
+                default:
+                    if ((l_keyboardValue < "0" || l_keyboardValue > "9") && l_keyboardValue !== "." && l_keyboardValue !== "-") {
+                        p_event.preventDefault();
+                        p_event.stopImmediatePropagation();
+                    }
+                    break;
             }
-            this.createGrid();
+        });
+    }
+
+    drawNewValueOnGrid(p_cellIndex, p_value) {
+        //Contenu de la cellule
+        let l_cell = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][p_cellIndex];
+        l_cell.textContent = p_value;
+        //Color et Header
+        this.updateColorCellAndHeader(l_cell,p_cellIndex);
+    }
+
+    // selectNextCell(p_cellIdx) {
+    //     const l_nbCells = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells].length;
+    //     const l_nextCellIdx = (p_cellIdx + 1) % l_nbCells;
+    //     const l_nextCell = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][l_nextCellIdx];
+    //
+    //     let p_event = l_nextCell.event
+    //     this.showInputBox(p_event,l_nextCellIdx);
+    //
+    //     // Append the input box to the next cell and focus on it
+    //     this.m_matrixMixer.appendChild(l_inputBox);
+    //     l_inputBox.focus();
+    //
+    //     return l_nextCell;
+    // }
+
+    getMixerMatrixGainMin () {
+        // let l_channelIdx = p_cellIndex % this.m_nbCols;
+        // if (g_Gui.getDevice().isAVWallDTxI() && this.m_AudioWay === e_AudioWay.input && g_Gui.getInterfaceMode() === e_GuiMode.GuiModeEasy && g_Gui.getMixerControl()) {
+        //     // Special case DT4I : AVDT4I gain -12 / +64 , user want +64 / -81 =>  ! pb ! ==> Using mixer on easy mode => input +64 / -81
+        //     l_minGain = g_Gui.getDevice().getMixerChanGainMin(e_AudioWay.mixerInput, g_Gui.getMixerControl().getCurrentMixer(), l_channelIdx);
+        // }
+        return this.m_minTrim;
+    }
+
+    getMixerMatrixGainMax () {
+        // let l_channelIdx = p_cellIndex % this.m_nbCols;
+        return 12
+    }
+
+    // setGainValueFromMatrixMixer(p_AudioWay, p_mixerIdx, p_chanIdx, p_gainValue) {
+    //     let l_device = this.m_cardAlias
+    //     if (p_gainValue !== undefined) {
+    //         if (!isNaN(p_gainValue)) {
+    //             //Mise à jour au niveau du model
+    //             // l_device.setMixerChanGain(p_AudioWay, p_mixerIdx, p_chanIdx, p_gainValue);
+    //             //Mise à jour de la vue Slice
+    //             // if (  this.m_matrixMixerControl  &&   this.m_matrixMixerControl .getCurrentMixer() === p_mixerIdx) {
+    //             //     this.m_matrixMixerControl .getMixerSlices()[p_chanIdx].m_faderViewmeter.goToValue(p_gainValue);
+    //             // }
+    //         }
+    //     }
+    // }
+    //
+    // setMuteValueFromMatrixMixer(p_AudioWay, p_mixerIdx, p_chanIdx, p_mute) {
+    //     if (p_mute !== undefined) {
+    //         g_Gui.getDevice().setMixerChanMute(p_AudioWay, p_mixerIdx, p_chanIdx, p_mute);
+    //     }
+    // }
+    //
+    // refreshMixerValuesFromModel(p_audioWay, p_mixerIdx, p_sliceIdx) {
+    //     let l_device = g_Gui.getDevice();
+    //     const l_cellIndex= p_mixerIdx * this.m_nbCols + p_sliceIdx;
+    //     const l_mute = l_device.getMixerChanMute(p_audioWay, p_mixerIdx, p_sliceIdx);
+    //     const l_trim = l_device.getMixerChanGain(p_audioWay, p_mixerIdx, p_sliceIdx);
+    //     const cell = this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][l_cellIndex];
+    //
+    //     if (l_trim > this.m_minTrim && !l_mute) {
+    //         cell.textContent = l_trim;
+    //         this.updateColorCellAndHeader(cell,l_cellIndex)
+    //     } else {
+    //         cell.textContent = "";
+    //         cell.style.backgroundColor = "";
+    //     }
+    // }
+
+    updateColorCellAndHeader(p_cell, p_cellIndex) {
+        // Définir la couleur des entêtes correspondant à la cellule
+        p_cell.style.backgroundColor = "green";
+        const l_colIndex = p_cellIndex % this.m_nbCols;
+        const l_rowIndex = Math.floor(p_cellIndex / this.m_nbCols);
+
+        // Mise à jour de la couleur des alias en fonction de l'état de remplissage des lignes et des colonnes
+        this.updateAliasColor(l_colIndex, l_rowIndex);
+        // Démarrer ou arrêter l'animation du VuMeter si une valeur est présente
+        this.toggleVuMeterAnimation(p_cell, p_cellIndex);
+    }
+    updateAliasColor(l_colIndex, l_rowIndex) {
+        const l_audioSourcesAlias = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName][l_colIndex].childNodes[e_channelNameContent.alias];
+        const l_audioReceiverAlias = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName][l_rowIndex].childNodes[e_channelNameContent.alias];
+
+        l_audioSourcesAlias.style.color = this.isColFilled(l_colIndex) ? "#FFFFB4bb" : "";
+        l_audioReceiverAlias.style.color = this.isRowFilled(l_rowIndex) ? "#FFFFB4bb" : "";
+    }
+    toggleVuMeterAnimation(p_cell, p_cellIndex) {
+        if (p_cell.textContent) {
+            this.startVuMeterAnimation(p_cellIndex);
+        } else {
+            this.stopVuMeterAnimation(p_cellIndex);
+        }
+    }
+    startVuMeterAnimation(p_cellIndex) {
+        const l_audioSourcesVuMeter = this.getVuMeter(p_cellIndex, true);
+        const l_audioReceiverVuMeter = this.getVuMeter(p_cellIndex, false);
+
+        this.animateVuMeter(l_audioSourcesVuMeter);
+        this.animateVuMeter(l_audioReceiverVuMeter);
+    }
+
+    stopVuMeterAnimation(p_cellIndex) {
+        const l_colIndex = p_cellIndex % this.m_nbCols;
+        const l_rowIndex = Math.floor(p_cellIndex / this.m_nbCols);
+        const l_audioSourcesVuMeter = this.getVuMeter(p_cellIndex, true);
+        const l_audioReceiverVuMeter = this.getVuMeter(p_cellIndex, false);
+
+        if (!this.isRowFilled(l_rowIndex)) {
+            this.stopAnimation(l_audioReceiverVuMeter,l_colIndex,l_rowIndex);
+            this.updateAliasColor(l_colIndex, l_rowIndex);
+        }
+        if (!this.isColFilled(l_colIndex)) {
+            this.stopAnimation(l_audioSourcesVuMeter,l_colIndex,l_rowIndex);
+            this.updateAliasColor(l_colIndex, l_rowIndex);
+        }
+    }
+
+    getVuMeter(p_cellIndex, p_source) {
+        const l_index = p_source ? p_cellIndex % this.m_nbCols : Math.floor(p_cellIndex / this.m_nbCols);
+        const component = p_source ? e_matrixMixerComponents.AudioSources : e_matrixMixerComponents.AudioReceiver;
+        return this.m_matrixMixerData[component][e_matrixMixerHeaders.channelName][l_index].childNodes[e_channelNameContent.vuMeter];
+    }
+
+    animateVuMeter(p_canvas) {
+        const l_vuMeterContext = p_canvas.getContext("2d");
+
+        const animate = () => {
+            const newValue = Math.random() * 100;
+            l_vuMeterContext.clearRect(0, 0, p_canvas.width, p_canvas.height);
+            l_vuMeterContext.fillRect(0, 0, (newValue / 100) * p_canvas.width, p_canvas.height);
+            p_canvas.animationTimeoutId = setTimeout(animate, 300);
         };
 
-        l_input.addEventListener("blur", updateCell);
-
-        l_input.addEventListener("keydown", (p_event) => {
-            if (p_event.key === "Enter") {
-                updateCell();
-            }
-        });
-
-        document.addEventListener("click", (p_event) => {
-            if (!p_cell.contains(p_event.target) && p_event.target !== l_input) {
-                l_input.style.display = "none";
-            }
-        }, { once: true });
+        animate();
     }
 
-    //Boutons
-    addExpandBtn(p_frame) {
-        const l_addExpandBtn = document.createElement("button");
-        l_addExpandBtn.textContent = "Expand";
-        l_addExpandBtn.addEventListener("click", () => this.expandGrid());
-        p_frame.appendChild(l_addExpandBtn);
-    }
-
-    addCollapseBtn(p_frame) {
-        const l_addCollapseBtn = document.createElement("button");
-        l_addCollapseBtn.textContent = "Collapse";
-        l_addCollapseBtn.addEventListener("click", () => this.collapseGrid());
-        p_frame.appendChild(l_addCollapseBtn);
-    }
-
-    addOptimalBtn(p_frame) {
-        const l_addOptimaleBtn = document.createElement("button");
-        l_addOptimaleBtn.textContent = "Optimal";
-        l_addOptimaleBtn.addEventListener("click", () => this.optimalGrid());
-        p_frame.appendChild(l_addOptimaleBtn);
-    }
-
-    addExpandCollapseButtons() {
-        const l_expandCollapseButtons = document.createElement("div");
-        l_expandCollapseButtons.className = "btnContainer";
-        this.addExpandBtn(l_expandCollapseButtons);
-        this.addCollapseBtn(l_expandCollapseButtons);
-        this.addOptimalBtn(l_expandCollapseButtons);
-        this.m_matrixMixer.appendChild(l_expandCollapseButtons);
-    }
-
-    expandGrid() {
-        if (this.m_expansionLevel < 3) {
-            this.m_expansionLevel++;
-            this.getExpansionLevel();
-            this.createGrid(this.m_expansionLevel);
-        } else {
-            console.log("Expansion_lvl max à ", this.m_expansionLevel);
+    stopAnimation(p_canvas,p_colIndex,p_rowIndex) {
+        if (p_canvas.animationTimeoutId) {
+            clearTimeout(p_canvas.animationTimeoutId);
+            delete p_canvas.animationTimeoutId;
         }
+        const l_vuMeterContext = p_canvas.getContext("2d");
+        l_vuMeterContext.clearRect(0, 0, p_canvas.width, p_canvas.height);
+        p_canvas.remove();
+
+        const newCanvas = this.fctDrawChannelVuMeter(p_canvas.classList.contains("colVuMeterMatrixMixerCanvas"));
+        const parent = p_canvas.classList.contains("colVuMeterMatrixMixerCanvas") ?
+            this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName][p_colIndex] :
+            this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName][p_rowIndex];
+        parent.insertBefore(newCanvas, parent.childNodes[e_channelNameContent.alias].nextSibling);
     }
 
-    optimalGrid() {
-        if (this.m_expansionLevel >= 1) {
-            this.m_expansionLevel = 2
-            this.getExpansionLevel();
-            this.updateGridDataForExpansion(this.m_expansionLevel, this.m_cols, this.m_rows)
-            this.createGrid(this.m_expansionLevel);
-        } else {
-            console.log("Expansion Optimal impossible")
-        }
-    }
-
-    collapseGrid() {
-        if (this.m_expansionLevel > 1) {
-            this.m_expansionLevel--;
-            this.getExpansionLevel();
-            if (this.m_expansionLevel === 1) {
-                this.hideHeaders();
-                this.updateGridDataForExpansion(this.m_expansionLevel);
-                this.createGrid(this.m_expansionLevel);
-            } else if (this.m_expansionLevel === 2) {
-                this.hideHeaders3();
-                this.showInvisibleHeaders3()
-                this.updateGridDataForExpansion(this.m_expansionLevel)
-                this.createGrid(this.m_expansionLevel);
-            }
-        } else {
-            console.log("Expansion_lvl min à ", this.m_expansionLevel);
-        }
-    }
-
-    hideHeaders3() {
-        // Cache les en-têtes de colonnes et lignes dans level3
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName] = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName].map(header => ({ ...header, hidden: true }));
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName] = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName].map(header => ({ ...header, hidden: true }));
-    }
-
-    showInvisibleHeaders3() {
-        // Affiche les colonnes et lignes cachées
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelResume] = this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelResume].map(header => ({ ...header, hidden: false }));
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelResume] = this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelResume].map(header => ({ ...header, hidden: false }));
-    }
-
-    hideHeaders() {
-        // Cache les en-têtes de colonnes level2, level3 et hideColumns
-        const { level2, level3, hideColumns } = this.m_matrixMixerData.columns;
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelGroupe] = level2.map(header => ({ ...header, hidden: true }));
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelName] = level3.map(header => ({ ...header, hidden: true }));
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioSources][e_matrixMixerHeaders.channelResume] = hideColumns.map(header => ({ ...header, hidden: true }));
-
-        // Cache les en-têtes de lignes level2, level3 et hideRows
-        const { level2: rowLevel2, level3: rowLevel3, hideRows } = this.m_matrixMixerData.rows;
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName] = rowLevel2.map(header => ({ ...header, hidden: true }));
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelName] = rowLevel3.map(header => ({ ...header, hidden: true }));
-        this.m_matrixMixerData[e_matrixMixerComponents.AudioReceiver][e_matrixMixerHeaders.channelResume] = hideRows.map(header => ({ ...header, hidden: true }));
-    }
-
-    updateGridDataForExpansion(level,p_cols, p_rows) {
-        switch (level) {
-            case 1:
-                this.m_cols = Math.ceil(this.m_cols / 64);
-                this.m_rows = Math.ceil(this.m_rows / 64);
-                this.m_cellSize = this.m_cellSize * 16;
-                break;
-            case 2:
-                this.m_cols = Math.ceil(this.m_cols / 8);
-                this.m_rows = Math.ceil(this.m_rows / 8);
-                this.m_cellSize = this.m_cellSize * 4;
-                break;
-            case 3:
-                this.m_cols = p_cols;
-                this.m_rows = p_rows;
-                this.m_cellSize = 19;
-                break;
-            default:
-                console.error('Niveau d\'expansion inconnu');
-                break;
-        }
-        this.updateGridDimensionsCSS();
-    }
-
-    //MinusPlusButton
-    addMinusPlusBtn(p_frame) {
-        const l_addMinusPlusBtn = document.createElement("button");
-        l_addMinusPlusBtn.textContent = "-";
-        l_addMinusPlusBtn.classList.add("minus-btn");
-        l_addMinusPlusBtn.addEventListener('click', () => {
-            const p_type =
-                p_frame.hasAttribute('data-col-interval-index')
-                    ? "column"
-                    : p_frame.hasAttribute('data-row-interval-index')
-                        ? "row"
-                        : "";
-
-            if (!p_type) {
-                console.error("Type non déterminé pour p_frame.");
-                return;
-            }
-
-            const isMinus = l_addMinusPlusBtn.classList.contains('minus-btn');
-            this.transformBtn(l_addMinusPlusBtn, p_frame, isMinus, p_type);
-        });
-
-        p_frame.appendChild(l_addMinusPlusBtn);
-    }
-
-    transformBtn(p_btn, p_frame, isMinus, p_type) {
-        p_btn.textContent = isMinus ? "+" : "-";
-        p_btn.classList.toggle("minus-btn", !isMinus);
-        p_btn.classList.toggle("plus-btn", isMinus);
-
-        if (p_type === "column") {
-            this.toggleColumn(p_frame.dataset.colIntervalIndex, isMinus);
-        } else if (p_type === "row") {
-            this.toggleRow(p_frame.dataset.rowIntervalIndex, isMinus);
-        }
-    }
-
-    toggleColumn(index, isMinus) {
-        // Toggle la visibilité de la colonne
-        let colCells = this.l_gridCellContainer.querySelectorAll(`.grid-cell[data-col-interval-index="${index}"]`);
-        let colHideCells = this.l_gridCellContainer.querySelectorAll(`.hiddenCellCol[data-col-interval-index="${index}"]`);
-        let headerHideColHeaders3 = this.l_columnHeadersContainer.querySelectorAll(`.hideColHeader3[data-interval-index="${index}"]`);
-        let headerColHeaders3 = this.l_columnHeadersContainer.querySelectorAll(`.colHeader3[data-interval-index="${index}"]`);
-
-        if (isMinus) {
-            // Masquer les cellules de la colonne
-            colCells.forEach(cell => {
-                cell.classList.add('hidden');
-            });
-            colHideCells.forEach(hideCell => {
-                hideCell.classList.remove('hidden');
-            });
-
-            // Gérer les en-têtes de colonnes
-            headerHideColHeaders3.forEach(header => {
-                header.classList.remove('hidden');
-                header.style.gridColumn = `span 8`;
-                header.style.width = `166px`;
-            });
-            headerColHeaders3.forEach(header => {
-                header.classList.add('hidden');
-            });
-
-            // Synchroniser la visibilité des lignes affectées par la colonne
-            this.l_gridCellContainer.querySelectorAll(`[data-col-interval-index="${index}"]`).forEach(cell => {
-                let rowIndex = cell.getAttribute('data-row');
-                // Masquer les cellules correspondantes dans la ligne
-                if (this.isHideRowVisible) {
-                    let rowCells = this.l_gridCellContainer.querySelectorAll(`[data-row="${rowIndex}"]`);
-                    rowCells.forEach(rowCell => {
-                        rowCell.classList.add('hidden');
-                    });
-                }
-            });
-
-            this.isHideColVisible = !this.isHideColVisible; // Mettre à jour l'état de la colonne
-        } else {
-            // Réafficher les cellules de la colonne et masquer les cellules cachées
-            colCells.forEach(cell => {
-                cell.classList.remove('hidden');
-            });
-            colHideCells.forEach(hideCell => {
-                hideCell.classList.add('hidden');
-            });
-
-            // Gérer les en-têtes des colonnes
-            headerHideColHeaders3.forEach(header => {
-                header.classList.add('hidden');
-            });
-            headerColHeaders3.forEach(header => {
-                header.classList.remove('hidden');
-            });
-
-            this.isHideColVisible = !this.isHideColVisible; // Remettre l'état de la colonne à visible
-
-            // Ré-afficher toutes les lignes si visibles
-            if (this.isHideRowVisible) {
-                this.l_gridCellContainer.querySelectorAll(`[data-row]`).forEach(cell => {
-                    cell.classList.remove('hidden');
-                });
+    isRowFilled(p_rowIndex) {
+        for (let idxCols = 0; idxCols < this.m_nbCols; idxCols++) {
+            if (this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][p_rowIndex * this.m_nbCols + idxCols].textContent) {
+                return true;
             }
         }
     }
 
-    toggleRow(index, isMinus) {
-        // Toggle the visibility of the hidden row
-        let rowCells = this.l_gridCellContainer.querySelectorAll(`.grid-cell[data-row-interval-index="${index}"]`);
-        let rowHideCells = this.l_gridCellContainer.querySelectorAll(`.hiddenCellRow[data-row-interval-index="${index}"]`);
-        let headerHideRowHeader3 = this.l_rowHeadersContainer.querySelectorAll(`.hideRowHeader3[data-interval-index="${index}"]`);
-        let headerRowHeaders3 = this.l_rowHeadersContainer.querySelectorAll(`.rowHeader3[data-interval-index="${index}"]`);
+    isColFilled(p_colIndex) {
+        for (let idxRows = 0; idxRows < this.m_nbRows; idxRows++) {
+            if (this.m_matrixMixerData[e_matrixMixerComponents.mixDisplay][e_matrixMixerCells.cells][idxRows * this.m_nbCols + p_colIndex].textContent) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        if (isMinus) {
-            // Masquer les cellules de la ligne
-            rowCells.forEach(cell => {
-                cell.classList.add('hidden');
-            });
 
-            rowHideCells.forEach(hideCell => {
-                hideCell.classList.remove('hidden');
-            });
-
-            // Gérer les en-têtes de lignes
-            headerHideRowHeader3.forEach(header => {
-                header.classList.remove('hidden');
-                header.classList.add('flex');
-                header.style.gridRow = `span 8`;
-                header.style.height = `167px`;
-            });
-            headerRowHeaders3.forEach(header => {
-                header.classList.remove('flex');
-                header.classList.add('hidden');
-            });
-
-            this.isHideRowVisible = !this.isHideRowVisible; // Mettre à jour l'état de la ligne
-
-            // Synchroniser la visibilité des colonnes affectées par la ligne
-            let l_gridCellsColInterval =  this.l_gridCellContainer.querySelectorAll(`[data-interval-index="${index}"]`)
-            l_gridCellsColInterval.forEach(cell => {
-                let colIndex = cell.getAttribute('data-col');
-                let rowIndex = cell.getAttribute('data-row');
-                // Masquer les cellules correspondantes dans la colonne
-                if (this.isHideColVisible && colIndex === index && rowIndex === index) {
-                    let colCells = this.l_gridCellContainer.querySelectorAll(`[data-col="${colIndex}"]`);
-                    colCells.forEach(colCell => {
-                        colCell.classList.add('hidden');
-                    });
-                }
-            });
-
-        } else {
-            // Réafficher les cellules de la ligne et masquer les cellules cachées
-            rowCells.forEach(cell => {
-                cell.classList.remove('hidden');
-            });
-
-            rowHideCells.forEach(hideCell => {
-                hideCell.classList.add('hidden');
-            });
-
-            // Gérer les en-têtes des lignes
-            headerHideRowHeader3.forEach(header => {
-                header.classList.remove('flex');
-                header.classList.add('hidden');
-                header.style.gridRow = `span 1`;
-                header.style.height = ``;
-            });
-
-            headerRowHeaders3.forEach(header => {
-                header.classList.remove('hidden');
-            });
-
-            this.isHideRowVisible = !this.isHideRowVisible; // Remettre l'état de la ligne à visible
-
-            // Ré-afficher toutes les colonnes si visibles
-            if (this.isHideColVisible) {
-                this.l_gridCellContainer.querySelectorAll(`[data-col]`).forEach(cell => {
-                    cell.classList.remove('hidden');
-                });
+    clearInputBox() {
+        const l_inputBox = document.querySelector(".inputBox");
+        if (l_inputBox) {
+            const l_cell = l_inputBox.parentElement;
+            if (l_inputBox.value) {
+                l_cell.style.backgroundColor = "";
+            }
+            if (l_inputBox.parentNode) {
+                l_inputBox.remove();
             }
         }
     }
-
 }
 
-function createGridMatrix(p_containerSelector, p_numColumns, p_numRows, p_cellSize) {
-    return new gridMatrix(p_containerSelector, p_numColumns, p_numRows, p_cellSize);
+function createGridMatrix(p_containerSelector,) {
+    return new gridMatrix(p_containerSelector);
 }
 
-createGridMatrix("#matrixMixer", 64, 64, 19)
+
+createGridMatrix("matrixMixer");
