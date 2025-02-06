@@ -5,9 +5,10 @@
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: Arial, sans-serif, monospace;
   background-color: #292929;
   color: white;
+  font-size: small;
 }
 
 .menubar {
@@ -47,7 +48,7 @@ body {
 }
 
 .emptyContainer{
-  min-width: 236px;
+  min-width: 318px;
   border-top-left-radius: 5px;
 }
 
@@ -56,12 +57,15 @@ body {
   flex-direction: column;
   text-align: left;
   border-top: 5px solid darkgreen;
-  border-bottom: none;
+  border-bottom: 6px solid rgba(255, 255, 255, 0.13);
+  border-right: 2px solid rgba(255, 255, 255, 0.13);
   background-color: #444;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
 }
 
 .colCardTitle{
-  padding: 5px 0 0 5px;
+  padding: 5px 0 12px 5px;
 }
 
 .divForAllColChannelsGroups{
@@ -79,8 +83,6 @@ body {
 }
 
 .colChannelGroupsTitle{
-  /*margin-bottom: 60px;*/
-  /*margin-top: 10px;*/
   gap: 10px;
   display: flex;
   place-items: center;
@@ -96,14 +98,14 @@ body {
   display: flex;
   border-collapse: collapse;
   flex-direction: row;
-  margin-top: 121px;
+  margin-top: 110px;
 }
 
 .colChannelName{
   display: flex;
   flex-flow: column-reverse;
   position: relative;
-  height: 100px;
+  height: 117px;
   border-right: 1px solid rgba(255, 255, 255, 0.13);
 }
 
@@ -116,13 +118,12 @@ body {
 }
 
 .colVuMeterMatrixMixerCanvas {
-  width: 20px;
-  height: 3px;
+  width: 10px;
+  height: 22px;
+  border-radius: 4px ;
+  align-self: center;
+  margin-bottom: 8px;
   background-color : #103010;
-  border-radius: 5px ;
-  cursor: pointer;
-  rotate: -90deg;
-  margin-bottom: 11px;
 }
 
 /***** Rows  *****/
@@ -131,21 +132,21 @@ body {
   border-collapse: collapse;
   border-left: 5px solid darkgreen;
   width: 100%;
+  border-radius: 5px;
 }
 
 [class*="rowCardName"] {
   display: flex;
   position: relative;
-  transform-origin: center;
   background-color: #444;
 }
 
 .rowCardTitle {
-  display: flex;
-  width: 45px;
-  transform: rotate(-90deg);
-  justify-content: flex-end;
-  align-items: center;
+  width: 120px;
+  padding: 5px 0 0 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .divForAllRowChannelsGroups{
@@ -163,25 +164,18 @@ body {
 }
 
 .rowChannelGroupsTitle{
-  display:flex;
-  gap: 10px;
-  /*align-items: center;*/
   width: 96px;
-  /*place-items: center;*/
-  /*transform: rotate(-90deg);*/
-  /*transform-origin: center;*/
+  display:flex;
+  align-items: baseline;
 }
 
 .divForAllRowChannelsNames{
   display: flex;
-  width: 100%;
   flex-direction: column;
 }
 
 .rowChannelName{
   display: flex;
-  width: 100%;
-  flex-direction: row;
   border-bottom: 1px solid rgba(255, 255, 255, 0.13);
 }
 
@@ -192,6 +186,21 @@ body {
   width: 70px;
 }
 
+.rowVuMeterMatrixMixerCanvas {
+  width: 10px;
+  height: 22px;
+  border-radius: 4px ;
+  margin: 1px 8px 1px 0;
+  background-color: #103010;
+}
+
+
+.emptyAliasContainer{
+  width : 88px;
+}
+
+/***** Cells  *****/
+
 .cell{
   display: flex;
   border-right: 1px solid rgba(255, 255, 255, 0.13);
@@ -201,8 +210,9 @@ body {
   font-size:10px;
 }
 
-.cell:hover{
+.cell .filled:hover{
   font-size:14px;
+  z-index: 1000;
 }
 
 .minus-btn, .plus-btn {
@@ -210,8 +220,11 @@ body {
   background-color: transparent;
   color: white;
   border: 1px solid white;
-  border-radius: 25%;
+  border-radius: 8px;
   margin-left: auto;
+  place-content: center;
+  align-items: center;
+  cursor: pointer;
 }
 
 /* inputBox */
@@ -222,25 +235,41 @@ body {
   align-items: center;
   border-radius: 5px;
   z-index: 1000;
+  cursor: text;
 }
 
 /*Grid Infos*/
 .mixerGridInfos{
   color: #FFFFB4bb;
-  transform: rotate(-90deg);
-  transform-origin: left;
-  padding: 6px 0 0 21px;
+  background-color: rgba(0, 0, 0, 0.75);
+  transform-origin:top left;
+  display: inline-block;
   text-align: center;
   width: 100%;
+  transform: rotate(-90deg);
+  padding: 0 3px;
+  margin: -20px 5px 0 -6px;
+  border-radius: 2px;
 }
 
 .outputGridInfos{
   color: #FFFFB4bb;
   position: absolute;
-  left: -84px;
+  left: -78px;
   top:  -8px;
   white-space: nowrap;
+  background-color: rgba(0, 0, 0, 0.75);
+  padding: 0 3px;
+  border-radius: 2px;
 }
+
+.toggleButton{
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 1000;
+}
+
 
 /******* Specific *******/
 .hovered {
@@ -261,14 +290,4 @@ body {
 
 .highlight {
   background-color: rgba(255, 255, 255, 0.20);
-}
-
-.rowVuMeterMatrixMixerCanvas {
-  width: 20px;
-  height: 3px;
-  background-color : #103010;
-  border-radius: 5px ;
-  cursor: pointer;
-  rotate: -90deg;
-  margin-top: 8px;
 }
